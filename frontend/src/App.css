@@ -36,3 +36,94 @@
     transform: rotate(360deg);
   }
 }
+
+/* App.css - Add these styles */
+.coming-soon {
+  padding: 3rem 2rem;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.coming-soon h2 {
+  color: #2d3748;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.coming-soon > p {
+  color: #718096;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.feature-preview {
+  background: #f7fafc;
+  border: 2px dashed #cbd5e0;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+}
+
+.feature-preview p {
+  color: #4a5568;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.unauthorized, .not-found {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.error-container {
+  text-align: center;
+  max-width: 500px;
+}
+
+.error-container h1 {
+  font-size: 3rem;
+  color: #2d3748;
+  margin-bottom: 1rem;
+}
+
+.error-container p {
+  color: #718096;
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.back-btn, .home-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover, .home-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .coming-soon {
+    padding: 2rem 1rem;
+  }
+  
+  .coming-soon h2 {
+    font-size: 1.5rem;
+  }
+  
+  .error-container h1 {
+    font-size: 2rem;
+  }
+}

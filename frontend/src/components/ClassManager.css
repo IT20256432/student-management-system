@@ -219,6 +219,41 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* Fix for input text visibility */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  color: #2c3e50 !important; /* Dark color for good visibility */
+  background-color: #ffffff !important;
+}
+
+/* Ensure placeholder text is visible but distinct */
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #95a5a6 !important;
+  opacity: 1 !important;
+}
+
+/* Focus states with visible text */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  color: #2c3e50 !important;
+  background-color: #ffffff !important;
+}
+
+/* Specific fix for fee modal inputs */
+.fee-form input,
+.fee-form textarea {
+  color: #2c3e50 !important;
+  background-color: #ffffff !important;
+}
+
+.fee-form input::placeholder,
+.fee-form textarea::placeholder {
+  color: #95a5a6 !important;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -471,4 +506,231 @@
     gap: 10px;
     align-items: flex-start;
   }
+}
+
+/* Add these styles to your existing ClassManager.css */
+
+/* Fee Modal */
+.fee-modal {
+  max-width: 800px;
+}
+
+.fee-form {
+  padding: 24px;
+}
+
+.fee-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.fee-form .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.fee-form textarea {
+  padding: 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.fee-form textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.total-fee-display {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.total-fee-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.total-fee-amount {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Fee Summary in Class Card */
+.fee-summary {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  border-left: 4px solid #667eea;
+}
+
+.fee-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.fee-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.fee-status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.fee-status.configured {
+  background: #d4edda;
+  color: #155724;
+}
+
+.fee-status.not-configured {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.fee-breakdown {
+  space-y: 8px;
+}
+
+.fee-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.fee-item:not(:last-child) {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.fee-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 0 0;
+  margin-top: 8px;
+  border-top: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.total-amount {
+  color: #28a745;
+  font-size: 1.1rem;
+}
+
+/* Enhanced Stats Cards */
+.classes-stats .stat-card:nth-child(3) {
+  border-left-color: #28a745;
+}
+
+.classes-stats .stat-card:nth-child(4) {
+  border-left-color: #ffc107;
+}
+
+/* Currency formatting */
+.currency {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+/* Responsive design for fee form */
+@media (max-width: 768px) {
+  .fee-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .total-fee-display {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .fee-summary {
+    margin: 12px 0;
+  }
+  
+  .class-actions {
+    flex-direction: column;
+  }
+  
+  .class-actions button {
+    width: 100%;
+  }
+}
+
+/* Print styles for fee reports */
+@media print {
+  .class-actions,
+  .btn-primary {
+    display: none;
+  }
+  
+  .fee-summary {
+    background: white;
+    border: 1px solid #000;
+  }
+  
+  .class-card {
+    break-inside: avoid;
+    margin-bottom: 20px;
+  }
+}
+
+/* Animation for fee updates */
+@keyframes feeUpdate {
+  0% { background-color: #fff3cd; }
+  100% { background-color: #f8f9fa; }
+}
+
+.fee-summary.updated {
+  animation: feeUpdate 2s ease-in-out;
+}
+
+/* Fee breakdown expandable section */
+.fee-details-toggle {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 4px 0;
+  text-align: left;
+  width: 100%;
+}
+
+.fee-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e9ecef;
+}
+
+.fee-detail-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 2px 0;
+  color: #6c757d;
 }

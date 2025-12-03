@@ -1,6 +1,7 @@
 package com.example.SM.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -67,9 +68,16 @@ public class Student {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // CHANGED: Added @JsonIgnore to prevent circular references
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id")
+    // FIXED: Added cascade configuration for proper relationship persistence
+    @ManyToOne(
+        fetch = FetchType.LAZY,
+        cascade = {CascadeType.MERGE, CascadeType.REFRESH}
+    )
+    @JoinColumn(
+        name = "class_id", 
+        referencedColumnName = "id",
+        foreignKey = @ForeignKey(name = "fk_student_class")
+    )
     @JsonIgnore
     private SchoolClass schoolClass;
 
@@ -80,24 +88,37 @@ public class Student {
         this.createdAt = LocalDateTime.now();
     }
 
-    // NEW: Helper methods to get class info without circular reference
-    public String getClassName() {
-        return schoolClass != null ? schoolClass.getClassName() : null;
-    }
-
-    public String getClassTeacher() {
-        return schoolClass != null ? schoolClass.getClassTeacher() : null;
-    }
-
-    public String getRoomNumber() {
-        return schoolClass != null ? schoolClass.getRoomNumber() : null;
-    }
-
+    // JSON Properties for class information - ADD @JsonProperty annotations!
+    @JsonProperty("classId")
     public Long getClassId() {
         return schoolClass != null ? schoolClass.getId() : null;
     }
 
-    // Getters and Setters (keep all your existing ones)
+    @JsonProperty("className")
+    public String getClassName() {
+        return schoolClass != null ? schoolClass.getClassName() : null;
+    }
+
+    @JsonProperty("classTeacher")
+    public String getClassTeacher() {
+        return schoolClass != null ? schoolClass.getClassTeacher() : null;
+    }
+
+    @JsonProperty("roomNumber")
+    public String getRoomNumber() {
+        return schoolClass != null ? schoolClass.getRoomNumber() : null;
+    }
+
+    // IMPORTANT: Add a setter for schoolClass that automatically updates grade
+    public void setSchoolClass(SchoolClass schoolClass) {
+        this.schoolClass = schoolClass;
+        // Automatically update grade when class is set
+        if (schoolClass != null && schoolClass.getGrade() != null) {
+            this.grade = schoolClass.getGrade();
+        }
+    }
+
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -250,11 +271,21 @@ public class Student {
         this.createdAt = createdAt;
     }
 
+    // Keep the getter for schoolClass (used internally)
     public SchoolClass getSchoolClass() {
         return schoolClass;
     }
-
-    public void setSchoolClass(SchoolClass schoolClass) {
-        this.schoolClass = schoolClass;
+    
+    @Override
+    public String toString() {
+        return "Student{" +
+                "id=" + id +
+                ", studentId='" + studentId + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", grade='" + grade + '\'' +
+                ", classId=" + getClassId() +
+                ", className='" + getClassName() + '\'' +
+                '}';
     }
 }

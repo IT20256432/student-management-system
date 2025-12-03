@@ -30,8 +30,22 @@ public class ClassScheduleService {
     }
     
     public ClassSchedule createSchedule(ClassSchedule schedule) {
+        // Validate that schoolClass is provided and has an ID
+        if (schedule.getSchoolClass() == null || schedule.getSchoolClass().getId() == null) {
+            throw new RuntimeException("Class ID is required");
+        }
+        
+        // Load the complete SchoolClass entity from database
+        Long classId = schedule.getSchoolClass().getId();
+        SchoolClass schoolClass = schoolClassRepository.findById(classId)
+            .orElseThrow(() -> new RuntimeException("Class not found with id: " + classId));
+        
+        // Set the complete schoolClass entity
+        schedule.setSchoolClass(schoolClass);
+        
+        // Check for time conflicts
         List<ClassSchedule> existingSchedules = classScheduleRepository.findBySchoolClassAndDayOfWeek(
-            schedule.getSchoolClass(), schedule.getDayOfWeek());
+            schoolClass, schedule.getDayOfWeek());
         
         for (ClassSchedule existing : existingSchedules) {
             if (hasTimeConflict(existing, schedule)) {
@@ -55,6 +69,18 @@ public class ClassScheduleService {
         Optional<ClassSchedule> existingSchedule = classScheduleRepository.findById(id);
         if (existingSchedule.isPresent()) {
             ClassSchedule schedule = existingSchedule.get();
+            
+            // If class is being changed, validate and load the new class
+            if (scheduleDetails.getSchoolClass() != null && 
+                scheduleDetails.getSchoolClass().getId() != null &&
+                !scheduleDetails.getSchoolClass().getId().equals(schedule.getSchoolClass().getId())) {
+                
+                Long newClassId = scheduleDetails.getSchoolClass().getId();
+                SchoolClass newSchoolClass = schoolClassRepository.findById(newClassId)
+                    .orElseThrow(() -> new RuntimeException("Class not found with id: " + newClassId));
+                schedule.setSchoolClass(newSchoolClass);
+            }
+            
             schedule.setDayOfWeek(scheduleDetails.getDayOfWeek());
             schedule.setStartTime(scheduleDetails.getStartTime());
             schedule.setEndTime(scheduleDetails.getEndTime());

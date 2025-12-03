@@ -1,0 +1,573 @@
+.fee-scanner-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.scanner-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.scanner-header h2 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.scanner-header p {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+}
+
+.scanner-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.qr-scanner {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 1.5rem;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scanner-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.start-scan-btn, .stop-scan-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.start-scan-btn {
+    background: #3498db;
+    color: white;
+}
+
+.start-scan-btn:hover {
+    background: #2980b9;
+}
+
+.stop-scan-btn {
+    background: #e74c3c;
+    color: white;
+}
+
+.stop-scan-btn:hover {
+    background: #c0392b;
+}
+
+.scanner-status {
+    color: #27ae60;
+    font-weight: 500;
+}
+
+.payment-interface {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.student-card, .fee-status-card, .payment-form-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.payment-form-card {
+    grid-column: 1 / -1;
+}
+
+.student-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.student-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.fee-status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.fee-status-badge.paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.fee-status-badge.partial {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.fee-status-badge.pending {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.student-details p {
+    margin: 0.5rem 0;
+    color: #555;
+}
+
+.fee-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.fee-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.fee-item.total {
+    border-top: 2px solid #3498db;
+    border-bottom: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.amount.paid {
+    color: #27ae60;
+}
+
+.amount.pending {
+    color: #e74c3c;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group small {
+    color: #7f8c8d;
+    font-size: 0.8rem;
+}
+
+.payment-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.pay-btn, .scan-again-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pay-btn {
+    background: #27ae60;
+    color: white;
+}
+
+.pay-btn:hover:not(:disabled) {
+    background: #219a52;
+}
+
+.pay-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.scan-again-btn {
+    background: #3498db;
+    color: white;
+}
+
+.scan-again-btn:hover {
+    background: #2980b9;
+}
+
+.spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.retry-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.instructions {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.instructions h4 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.instructions ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.instructions li {
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+@media (max-width: 768px) {
+    .fee-scanner-container {
+        padding: 1rem;
+    }
+    
+    .payment-interface {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .payment-actions {
+        flex-direction: column;
+    }
+}
+
+.demo-notice {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.demo-notice small {
+    color: #856404;
+    font-weight: 500;
+}
+
+.demo-mode-indicator {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.demo-mode-indicator small {
+    color: #155724;
+    font-weight: 500;
+}
+/* Fee Structure Card */
+.fee-structure-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    grid-column: 1 / -1;
+}
+
+.fee-breakdown-detailed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fee-breakdown-detailed .fee-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.fee-breakdown-detailed .fee-item.total {
+    border-top: 2px solid #3498db;
+    border-bottom: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+}
+
+/* Payment Suggestions */
+.payment-suggestions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.suggestion-btn {
+    padding: 8px 12px;
+    border: 2px solid #3498db;
+    background: white;
+    color: #3498db;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.suggestion-btn:hover {
+    background: #3498db;
+    color: white;
+}
+
+.suggestion-btn.full-fee {
+    border-color: #27ae60;
+    color: #27ae60;
+}
+
+.suggestion-btn.full-fee:hover {
+    background: #27ae60;
+    color: white;
+}
+
+.suggestion-btn.monthly {
+    border-color: #e67e22;
+    color: #e67e22;
+}
+
+.suggestion-btn.monthly:hover {
+    background: #e67e22;
+    color: white;
+}
+
+.suggestion-btn.balance {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.suggestion-btn.balance:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+/* Updated Payment Interface Grid */
+.payment-interface {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.student-card, .fee-status-card {
+    grid-column: span 1;
+}
+
+.fee-structure-card, .payment-form-card {
+    grid-column: 1 / -1;
+}
+
+/* Enhanced Instructions */
+.instructions ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.instructions li {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.instructions li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #27ae60;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .payment-interface {
+        grid-template-columns: 1fr;
+    }
+    
+    .student-card, .fee-status-card {
+        grid-column: span 1;
+    }
+    
+    .payment-suggestions {
+        flex-direction: column;
+    }
+    
+    .suggestion-btn {
+        text-align: center;
+    }
+}
+
+/* Class Selection Modal */
+.class-selection-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.class-selection-modal .modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.class-selection {
+    margin-bottom: 1.5rem;
+}
+
+.class-selection label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.class-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.cancel-btn, .assign-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.cancel-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background: #545b62;
+}
+
+.assign-btn {
+    background: #3498db;
+    color: white;
+}
+
+.assign-btn:hover:not(:disabled) {
+    background: #2980b9;
+}
+
+.assign-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}

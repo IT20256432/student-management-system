@@ -12,7 +12,7 @@ const ScheduleManager = () => {
   const [error, setError] = useState(null);
 
   const [scheduleForm, setScheduleForm] = useState({
-    classId: '',
+    schoolClass: { id: '' },
     dayOfWeek: 'MONDAY',
     startTime: '08:00',
     endTime: '09:00',
@@ -31,15 +31,8 @@ const ScheduleManager = () => {
 
   useEffect(() => {
     loadClasses();
+    loadAllSchedules();
   }, []);
-
-  useEffect(() => {
-    if (selectedClass) {
-      loadSchedules(selectedClass);
-    } else {
-      setSchedules([]);
-    }
-  }, [selectedClass]);
 
   const loadClasses = async () => {
     try {
@@ -47,6 +40,10 @@ const ScheduleManager = () => {
       setClasses(classList);
       if (classList.length > 0) {
         setSelectedClass(classList[0].id);
+        setScheduleForm(prev => ({
+          ...prev,
+          schoolClass: { id: classList[0].id }
+        }));
       }
     } catch (error) {
       console.error('Error loading classes:', error);
@@ -54,11 +51,29 @@ const ScheduleManager = () => {
     }
   };
 
-  const loadSchedules = async (classId) => {
+  const loadAllSchedules = async () => {
     try {
       setLoading(true);
-      const scheduleList = await scheduleAPI.getByClass(classId);
-      setSchedules(scheduleList);
+      // Load schedules for all classes
+      const allSchedules = [];
+      for (const cls of classes) {
+        try {
+          const classSchedules = await scheduleAPI.getByClass(cls.id);
+          // Add class information to each schedule
+          const schedulesWithClassInfo = classSchedules.map(schedule => ({
+            ...schedule,
+            className: cls.className,
+            grade: cls.grade,
+            stream: cls.stream,
+            roomNumber: cls.roomNumber,
+            classTeacher: cls.classTeacher
+          }));
+          allSchedules.push(...schedulesWithClassInfo);
+        } catch (error) {
+          console.error(`Error loading schedules for class ${cls.className}:`, error);
+        }
+      }
+      setSchedules(allSchedules);
     } catch (error) {
       console.error('Error loading schedules:', error);
       setError('Failed to load schedules');
@@ -66,6 +81,37 @@ const ScheduleManager = () => {
       setLoading(false);
     }
   };
+
+  const loadSchedulesForClass = async (classId) => {
+    try {
+      setLoading(true);
+      const scheduleList = await scheduleAPI.getByClass(classId);
+      // Add class information to schedules
+      const selectedClass = classes.find(c => c.id == classId);
+      const schedulesWithClassInfo = scheduleList.map(schedule => ({
+        ...schedule,
+        className: selectedClass?.className,
+        grade: selectedClass?.grade,
+        stream: selectedClass?.stream,
+        roomNumber: selectedClass?.roomNumber,
+        classTeacher: selectedClass?.classTeacher
+      }));
+      setSchedules(schedulesWithClassInfo);
+    } catch (error) {
+      console.error('Error loading schedules:', error);
+      setError('Failed to load schedules');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClass) {
+      loadSchedulesForClass(selectedClass);
+    } else {
+      loadAllSchedules();
+    }
+  }, [selectedClass]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,14 +124,37 @@ const ScheduleManager = () => {
         return;
       }
 
+      // Validate class is selected
+      if (!scheduleForm.schoolClass.id) {
+        setError('Please select a class');
+        return;
+      }
+
+      const scheduleData = {
+        schoolClass: {
+          id: scheduleForm.schoolClass.id
+        },
+        dayOfWeek: scheduleForm.dayOfWeek,
+        startTime: scheduleForm.startTime,
+        endTime: scheduleForm.endTime,
+        subject: scheduleForm.subject
+      };
+
+      console.log('Sending schedule data:', scheduleData);
+
       if (editingSchedule) {
-        await scheduleAPI.update(editingSchedule.id, scheduleForm);
+        await scheduleAPI.update(editingSchedule.id, scheduleData);
       } else {
-        await scheduleAPI.create(scheduleForm);
+        await scheduleAPI.create(scheduleData);
       }
 
       resetForm();
-      loadSchedules(selectedClass);
+      // Reload schedules based on current view
+      if (selectedClass) {
+        loadSchedulesForClass(selectedClass);
+      } else {
+        loadAllSchedules();
+      }
     } catch (error) {
       console.error('Error saving schedule:', error);
       setError(error.message || 'Failed to save schedule');
@@ -95,7 +164,7 @@ const ScheduleManager = () => {
   const handleEdit = (schedule) => {
     setEditingSchedule(schedule);
     setScheduleForm({
-      classId: schedule.schoolClass.id,
+      schoolClass: { id: schedule.schoolClass.id },
       dayOfWeek: schedule.dayOfWeek,
       startTime: schedule.startTime,
       endTime: schedule.endTime,
@@ -108,7 +177,12 @@ const ScheduleManager = () => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
       try {
         await scheduleAPI.delete(scheduleId);
-        loadSchedules(selectedClass);
+        // Reload schedules based on current view
+        if (selectedClass) {
+          loadSchedulesForClass(selectedClass);
+        } else {
+          loadAllSchedules();
+        }
       } catch (error) {
         console.error('Error deleting schedule:', error);
         setError('Failed to delete schedule');
@@ -120,7 +194,7 @@ const ScheduleManager = () => {
     setShowForm(false);
     setEditingSchedule(null);
     setScheduleForm({
-      classId: selectedClass,
+      schoolClass: { id: selectedClass || '' },
       dayOfWeek: 'MONDAY',
       startTime: '08:00',
       endTime: '09:00',
@@ -129,15 +203,26 @@ const ScheduleManager = () => {
     setError(null);
   };
 
+  const formatTimeDisplay = (time) => {
+    return time.replace(':00', '').replace(':30', ':30');
+  };
+
+  const getClassDisplayName = (schedule) => {
+    let displayName = schedule.className;
+    if (schedule.grade) {
+      displayName += ` (${schedule.grade})`;
+    }
+    if (schedule.stream) {
+      displayName += ` - ${schedule.stream}`;
+    }
+    return displayName;
+  };
+
+  // Group schedules by day for table display
   const getSchedulesByDay = (day) => {
     return schedules
       .filter(schedule => schedule.dayOfWeek === day)
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  };
-
-  const getSelectedClassName = () => {
-    const selected = classes.find(c => c.id == selectedClass);
-    return selected ? selected.className : 'Select Class';
   };
 
   return (
@@ -145,12 +230,11 @@ const ScheduleManager = () => {
       <div className="schedule-header">
         <div className="header-content">
           <h1>Class Schedule Management</h1>
-          <p>Manage timetables and class schedules</p>
+          <p>Manage timetables and class schedules for all classes</p>
         </div>
         <button 
           onClick={() => setShowForm(true)} 
           className="btn-primary"
-          disabled={!selectedClass}
         >
           + Add Schedule
         </button>
@@ -163,21 +247,40 @@ const ScheduleManager = () => {
         </div>
       )}
 
-      {/* Class Selection */}
-      <div className="class-selection">
-        <label htmlFor="classSelect">Select Class:</label>
-        <select
-          id="classSelect"
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-        >
-          <option value="">Choose a class...</option>
-          {classes.map(cls => (
-            <option key={cls.id} value={cls.id}>
-              {cls.className} - {cls.grade} {cls.stream ? `(${cls.stream})` : ''}
-            </option>
-          ))}
-        </select>
+      {/* View Toggle */}
+      <div className="view-controls">
+        <div className="view-toggle">
+          <button
+            className={!selectedClass ? 'active' : ''}
+            onClick={() => setSelectedClass('')}
+          >
+            📋 All Classes
+          </button>
+          <button
+            className={selectedClass ? 'active' : ''}
+            onClick={() => setSelectedClass(classes[0]?.id || '')}
+          >
+            🏫 Single Class
+          </button>
+        </div>
+
+        {selectedClass && (
+          <div className="class-selection">
+            <label htmlFor="classSelect">Select Class:</label>
+            <select
+              id="classSelect"
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+            >
+              <option value="">Choose a class...</option>
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.className} - {cls.grade} {cls.stream ? `(${cls.stream})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {showForm && (
@@ -194,14 +297,17 @@ const ScheduleManager = () => {
                   <label htmlFor="classId">Class *</label>
                   <select
                     id="classId"
-                    value={scheduleForm.classId}
-                    onChange={(e) => setScheduleForm({...scheduleForm, classId: e.target.value})}
+                    value={scheduleForm.schoolClass.id}
+                    onChange={(e) => setScheduleForm({
+                      ...scheduleForm, 
+                      schoolClass: { id: e.target.value }
+                    })}
                     required
                   >
                     <option value="">Select Class</option>
                     {classes.map(cls => (
                       <option key={cls.id} value={cls.id}>
-                        {cls.className}
+                        {cls.className} - {cls.grade} {cls.stream ? `(${cls.stream})` : ''}
                       </option>
                     ))}
                   </select>
@@ -230,7 +336,7 @@ const ScheduleManager = () => {
                     required
                   >
                     {timeSlots.map(time => (
-                      <option key={time} value={time}>{time}</option>
+                      <option key={time} value={time}>{formatTimeDisplay(time)}</option>
                     ))}
                   </select>
                 </div>
@@ -244,7 +350,7 @@ const ScheduleManager = () => {
                     required
                   >
                     {timeSlots.map(time => (
-                      <option key={time} value={time}>{time}</option>
+                      <option key={time} value={time}>{formatTimeDisplay(time)}</option>
                     ))}
                   </select>
                 </div>
@@ -275,89 +381,117 @@ const ScheduleManager = () => {
         </div>
       )}
 
-      {selectedClass ? (
-        <div className="schedule-container">
-          {loading ? (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Loading schedules for {getSelectedClassName()}...</p>
+      <div className="schedule-container">
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Loading schedules...</p>
+          </div>
+        ) : (
+          <>
+            <div className="schedule-header-info">
+              <h2>
+                {selectedClass 
+                  ? `Schedule for ${classes.find(c => c.id == selectedClass)?.className}`
+                  : 'All Class Schedules'
+                }
+              </h2>
+              <span className="schedule-count">
+                {schedules.length} period(s) total
+              </span>
             </div>
-          ) : (
-            <>
-              <div className="schedule-header-info">
-                <h2>Schedule for {getSelectedClassName()}</h2>
-                <span className="schedule-count">
-                  {schedules.length} period(s) scheduled
-                </span>
-              </div>
 
-              <div className="weekly-schedule">
-                {daysOfWeek.map(day => {
-                  const daySchedules = getSchedulesByDay(day);
-                  return (
-                    <div key={day} className="day-column">
-                      <div className="day-header">
-                        <h3>{day}</h3>
-                        <span className="period-count">{daySchedules.length} periods</span>
-                      </div>
-                      
-                      <div className="periods-list">
-                        {daySchedules.length > 0 ? (
-                          daySchedules.map(schedule => (
-                            <div key={schedule.id} className="period-card">
-                              <div className="period-time">
-                                {schedule.startTime} - {schedule.endTime}
-                              </div>
-                              <div className="period-subject">
-                                {schedule.subject}
-                              </div>
-                              <div className="period-actions">
-                                <button 
-                                  onClick={() => handleEdit(schedule)}
-                                  className="btn-edit-small"
-                                >
-                                  Edit
-                                </button>
-                                <button 
-                                  onClick={() => handleDelete(schedule.id)}
-                                  className="btn-danger-small"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="no-periods">
-                            No classes scheduled
-                          </div>
-                        )}
-                      </div>
+            <div className="weekly-schedule-table">
+              {daysOfWeek.map(day => {
+                const daySchedules = getSchedulesByDay(day);
+                return (
+                  <div key={day} className="day-section">
+                    <div className="day-header">
+                      <h3>{day}</h3>
+                      <span className="period-count">{daySchedules.length} periods</span>
                     </div>
-                  );
-                })}
-              </div>
+                    
+                    {daySchedules.length > 0 ? (
+                      <div className="schedules-table">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Time</th>
+                              <th>Class</th>
+                              <th>Room</th>
+                              <th>Subject</th>
+                              <th>Class Teacher</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {daySchedules.map(schedule => (
+                              <tr key={schedule.id}>
+                                <td className="time-cell">
+                                  {formatTimeDisplay(schedule.startTime)} - {formatTimeDisplay(schedule.endTime)}
+                                </td>
+                                <td className="class-cell">
+                                  <div className="class-info">
+                                    <strong>{getClassDisplayName(schedule)}</strong>
+                                    <span className="grade">{schedule.grade}</span>
+                                  </div>
+                                </td>
+                                <td className="room-cell">
+                                  {schedule.roomNumber || 'N/A'}
+                                </td>
+                                <td className="subject-cell">
+                                  {schedule.subject}
+                                </td>
+                                <td className="teacher-cell">
+                                  {schedule.classTeacher || 'N/A'}
+                                </td>
+                                <td className="actions-cell">
+                                  <button 
+                                    onClick={() => handleEdit(schedule)}
+                                    className="btn-edit-small"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDelete(schedule.id)}
+                                    className="btn-danger-small"
+                                  >
+                                    Delete
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="no-periods">
+                        No classes scheduled for {day}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-              {schedules.length === 0 && (
-                <div className="empty-state">
-                  <div className="empty-icon">📅</div>
-                  <h3>No Schedules Found</h3>
-                  <p>No schedules have been created for {getSelectedClassName()} yet.</p>
-                  <button onClick={() => setShowForm(true)} className="btn-primary">
-                    Add First Schedule
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="no-class-selected">
-          <div className="empty-icon">🏫</div>
-          <h3>Select a Class</h3>
-          <p>Please select a class to view and manage its schedule.</p>
-        </div>
-      )}
+            {schedules.length === 0 && (
+              <div className="empty-state">
+                <div className="empty-icon">📅</div>
+                <h3>No Schedules Found</h3>
+                <p>
+                  {selectedClass 
+                    ? `No schedules have been created for ${classes.find(c => c.id == selectedClass)?.className} yet.`
+                    : 'No schedules have been created for any class yet.'
+                  }
+                </p>
+                <button onClick={() => setShowForm(true)} className="btn-primary">
+                  Add First Schedule
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

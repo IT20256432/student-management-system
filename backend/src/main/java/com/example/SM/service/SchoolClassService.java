@@ -5,8 +5,10 @@ import com.example.SM.repository.SchoolClassRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class SchoolClassService {
@@ -23,7 +25,42 @@ public class SchoolClassService {
     }
     
     public List<SchoolClass> getClassesByGrade(String grade) {
-        return schoolClassRepository.findByGradeAndActiveTrue(grade);
+        try {
+            System.out.println("🎯 Service - Searching for grade: '" + grade + "'");
+            
+            // Clean the grade string
+            String cleanGrade = grade.trim();
+            System.out.println("🎯 Service - Cleaned grade: '" + cleanGrade + "'");
+            
+            // First try exact match
+            List<SchoolClass> classes = schoolClassRepository.findByGradeAndActiveTrue(cleanGrade);
+            
+            if (classes.isEmpty()) {
+                System.out.println("⚠️ No exact match found, trying all active classes");
+                // Try case-insensitive search
+                List<SchoolClass> allActiveClasses = schoolClassRepository.findByActiveTrue();
+                
+                // Use stream with Collectors.toList()
+                classes = allActiveClasses.stream()
+                    .filter(c -> c.getGrade() != null && c.getGrade().trim().equalsIgnoreCase(cleanGrade))
+                    .collect(Collectors.toList());
+            }
+            
+            if (classes.isEmpty()) {
+                System.out.println("⚠️ Still no classes found, returning all active classes as fallback");
+                // Return all active classes as fallback
+                classes = schoolClassRepository.findByActiveTrue();
+            }
+            
+            System.out.println("✅ Service - Returning " + classes.size() + " classes");
+            return classes;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Service error in getClassesByGrade: " + e.getMessage());
+            e.printStackTrace();
+            // Return empty list instead
+            return new ArrayList<>();
+        }
     }
     
     public Optional<SchoolClass> getClassById(Long id) {
@@ -65,6 +102,4 @@ public class SchoolClassService {
         }
         throw new RuntimeException("Class not found with id: " + id);
     }
-    
-   
 }

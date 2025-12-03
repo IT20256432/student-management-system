@@ -1,8 +1,8 @@
 // components/StudentList.jsx
-import React, { useState, useEffect } from 'react';
-import { studentAPI, attendanceAPI } from '../services/api';
+import React, { useState } from 'react';
+import {  attendanceAPI } from '../services/api';
 import { useStudents } from '../hooks/useStudents';
-import { formatDate, formatPhone, capitalizeWords } from '../utils/formatters';
+import { formatDate, formatPhone } from '../utils/formatters';
 import { GRADES, STATUSES } from '../utils/constants';
 import './StudentList.css';
 
@@ -37,7 +37,6 @@ const StudentList = () => {
         attendanceAPI.getByStudent(studentId),
         attendanceAPI.getSummary(studentId)
       ]);
-      
       setAttendanceRecords(records || []);
       setAttendanceSummary(summary);
       setSelectedStudent(studentId);

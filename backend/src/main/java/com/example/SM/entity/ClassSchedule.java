@@ -1,5 +1,6 @@
 package com.example.SM.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -13,6 +14,7 @@ public class ClassSchedule {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // ADD THIS
     private SchoolClass schoolClass;
 
     @Enumerated(EnumType.STRING)
