@@ -1,4 +1,3 @@
-// src/services/api.js - UPDATED VERSION WITH FEE STATUS CHECK
 const API_BASE_URL = 'http://localhost:8080/api';
 
 // Enhanced response handler
@@ -528,7 +527,16 @@ export const attendanceAPI = {
   },
   getBySession: (sessionId) => apiGet(`/attendance/session/${sessionId}`),
   getActiveSessions: () => apiGet('/attendance/sessions/active'),
-  getToday: () => apiGet('/attendance/today')
+  getToday: () => apiGet('/attendance/today'),
+  recordForSession: async (studentId, sessionId, status) => {
+    const response = await fetch(`/api/attendance/session/${sessionId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, status })
+    });
+    if (!response.ok) throw new Error('Failed to record attendance');
+    return response.json();
+  }
 };
 
 // OTHER APIs
@@ -537,7 +545,69 @@ export const scheduleAPI = {
   getTodayByClass: (classId) => apiGet(`/schedules/class/${classId}/today`),
   create: (scheduleData) => apiPost('/schedules', scheduleData),
   update: (id, scheduleData) => apiPut(`/schedules/${id}`, scheduleData),
-  delete: (id) => apiDelete(`/schedules/${id}`)
+  delete: (id) => apiDelete(`/schedules/${id}`),
+  
+  getSchedulesByClassAndDate: async (classId, date) => {
+    try {
+      const response = await fetch(`/api/schedules/class/${classId}?date=${date}`);
+      
+      // Check if response is HTML (error page)
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        throw new Error('API returned HTML instead of JSON');
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('getSchedulesByClassAndDate error:', error);
+      throw error;
+    }
+  },
+  
+  getTodaySchedulesByClass: async (classId) => {
+    try {
+      const response = await fetch(`/api/schedules/class/${classId}/today`);
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        throw new Error('API returned HTML instead of JSON');
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('getTodaySchedulesByClass error:', error);
+      throw error;
+    }
+  },
+  
+  getSchedulesByClass: async (classId) => {
+    try {
+      const response = await fetch(`/api/schedules/class/${classId}`);
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        throw new Error('API returned HTML instead of JSON');
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('getSchedulesByClass error:', error);
+      throw error;
+    }
+  }
+
 };
 
 export const sessionAPI = {
@@ -604,6 +674,8 @@ export const debugAPI = {
     return results;
   }
 };
+
+
 
 // NEW: Dedicated Fee Check API for Attendance Scanner
 export const attendanceFeeAPI = {

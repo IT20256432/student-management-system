@@ -1,59 +1,22 @@
+// src/components/ProtectedRoute.js
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 
-const ProtectedRoute = ({ children, requiredRole, requiredRoles }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  const userStr = localStorage.getItem('user');
-  let userRole = '';
-  
-  // Parse user data
-  try {
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      userRole = user.role || user.userRole || '';
-    }
-  } catch (e) {
-    console.error('Error parsing user data:', e);
+const ProtectedRoute = ({ redirectPath = '/login' }) => {
+  // Check if user is authenticated
+  const isAuthenticated = () => {
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('user');
+    return !!token && !!user;
+  };
+
+  if (!isAuthenticated()) {
+    // Redirect to login if not authenticated
+    return <Navigate to={redirectPath} replace />;
   }
 
-  console.log('🎭 ProtectedRoute check:', { 
-    isAuthenticated, 
-    userRole, 
-    requiredRole, 
-    requiredRoles 
-  });
-
-  // Check authentication first
-  if (!isAuthenticated) {
-    console.log('❌ User not authenticated, redirecting to login');
-    return <Navigate to="/login" replace />;
-  }
-
-  // Check role requirements
-  if (requiredRoles && !requiredRoles.includes(userRole)) {
-    console.log(`❌ User role ${userRole} not in required roles:`, requiredRoles);
-    return (
-      <div className="unauthorized">
-        <h1>🚫 Access Denied</h1>
-        <p>Required roles: {requiredRoles.join(', ')}</p>
-        <p>Your role: {userRole}</p>
-      </div>
-    );
-  }
-
-  if (requiredRole && userRole !== requiredRole) {
-    console.log(`❌ User role ${userRole} doesn't match required role: ${requiredRole}`);
-    return (
-      <div className="unauthorized">
-        <h1>🚫 Access Denied</h1>
-        <p>Required role: {requiredRole}</p>
-        <p>Your role: {userRole}</p>
-      </div>
-    );
-  }
-
-  console.log('✅ Access granted');
-  return children;
+  // Render child routes if authenticated
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

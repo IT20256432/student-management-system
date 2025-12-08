@@ -65,7 +65,6 @@ public class EmailService {
                         <h3>📋 Student Information</h3>
                         <p><strong>Student ID:</strong> %s</p>
                         <p><strong>Student Name:</strong> %s</p>
-                        <p><strong>Class:</strong> %s</p>
                         <p><strong>Email:</strong> %s</p>
                     </div>
                     

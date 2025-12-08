@@ -109,14 +109,17 @@ function App() {
   );
 }
 
-// Auth Redirect Component - Handles root path - FIXED VERSION
+// Auth Redirect Component - Updated to check correct values
 const AuthRedirect = () => {
-  // FIX: Check isAuthenticated instead of token
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  // FIX: Check authToken and user instead of isAuthenticated
+  const token = localStorage.getItem('authToken');
+  const user = localStorage.getItem('user');
+  const isAuthenticated = !!token && !!user;
 
   console.log('🔄 AuthRedirect - Checking authentication:', { 
-    isAuthenticated,
-    storedValue: localStorage.getItem('isAuthenticated')
+    tokenExists: !!token,
+    userExists: !!user,
+    isAuthenticated
   });
 
   if (isAuthenticated) {
