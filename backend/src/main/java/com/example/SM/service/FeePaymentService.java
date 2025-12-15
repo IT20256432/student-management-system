@@ -12,7 +12,13 @@ import com.example.SM.repository.FeePaymentRepository;
 import com.example.SM.repository.FeeStructureRepository;
 import com.example.SM.repository.SchoolClassRepository;
 import com.example.SM.repository.StudentRepository;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,7 +41,13 @@ public class FeePaymentService {
     @Autowired
     private SchoolClassRepository schoolClassRepository;
     
-    // ADD THIS METHOD - Record Payment
+    @Autowired
+    private JavaMailSender mailSender;
+    
+    @Autowired
+    private ReceiptPDFService receiptPDFService;
+    
+    
     public FeePayment recordPayment(FeePaymentRequest request) {
         try {
             System.out.println("🔄 Recording payment for student: " + request.getStudentId());
@@ -116,7 +128,7 @@ public class FeePaymentService {
         }
     }
     
-
+    
     
     public List<FeePaymentResponse> getRecentPayments() {
         try {
@@ -207,9 +219,7 @@ public class FeePaymentService {
             return errorStats;
         }
     }
-    
- // In FeePaymentService.java - Fixed LocalDate methods
-    public FeeStatus getFeeStatus(String studentId) {
+        public FeeStatus getFeeStatus(String studentId) {
         try {
             System.out.println("🔄 Getting fee status for student: " + studentId);
             
@@ -324,4 +334,149 @@ public class FeePaymentService {
             return feeStatus;
         }
     }
+        
+     // Add this method to your FeePaymentService class
+        public void sendPaymentConfirmation(Long paymentId) throws MessagingException {
+            try {
+                System.out.println("📧 Sending payment confirmation email...");
+                
+                // Fetch the payment with all details
+                FeePayment payment = feePaymentRepository.findById(paymentId)
+                    .orElseThrow(() -> new RuntimeException("Payment not found: " + paymentId));
+                
+                Student student = payment.getStudent();
+                SchoolClass schoolClass = payment.getSchoolClass();
+                
+                // Create HTML email
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                
+                // Set email details
+                helper.setTo(student.getEmail());
+                helper.setFrom("accounts@schoolmanagement.com");
+                helper.setSubject("✅ Fee Payment Confirmation - " + payment.getMonth());
+                
+                // Generate email content
+                String emailContent = generatePaymentConfirmationEmail(student, schoolClass, payment);
+                helper.setText(emailContent, true);
+                
+                // Send email
+                mailSender.send(message);
+                System.out.println("✅ Payment confirmation email sent to: " + student.getEmail());
+                
+            } catch (Exception e) {
+                System.err.println("❌ Failed to send confirmation email: " + e.getMessage());
+                throw new MessagingException("Failed to send confirmation email: " + e.getMessage());
+            }
+        }
+
+        private String generatePaymentConfirmationEmail(Student student, SchoolClass schoolClass, FeePayment payment) {
+            String studentName = student.getFirstName() + " " + student.getLastName();
+            String className = schoolClass != null ? schoolClass.getClassName() : "Not Assigned";
+            
+            return """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: 'Arial', sans-serif; color: #333; line-height: 1.6; }
+                        .container { max-width: 600px; margin: 0 auto; background: #f9f9f9; border-radius: 10px; overflow: hidden; }
+                        .header { background: #4CAF50; color: white; padding: 30px 20px; text-align: center; }
+                        .content { padding: 30px; background: white; }
+                        .payment-details { background: #f1f8e9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50; }
+                        .detail-row { display: flex; justify-content: space-between; margin: 10px 0; padding: 5px 0; border-bottom: 1px solid #eee; }
+                        .footer { background: #333; color: white; padding: 20px; text-align: center; font-size: 12px; }
+                        .success-icon { font-size: 24px; color: #4CAF50; margin-right: 10px; }
+                        .amount { font-size: 24px; color: #2E7D32; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>🎓 School Management System</h1>
+                            <h2>Payment Confirmation Receipt</h2>
+                        </div>
+                        
+                        <div class="content">
+                            <p>Dear <strong>%s</strong>,</p>
+                            
+                            <p>This email confirms that your fee payment has been successfully processed and recorded in our system.</p>
+                            
+                            <div class="payment-details">
+                                <h3 style="color: #2E7D32; margin-top: 0;">
+                                    <span class="success-icon">✅</span> Payment Confirmed
+                                </h3>
+                                
+                                <div class="detail-row">
+                                    <span><strong>Student ID:</strong></span>
+                                    <span>%s</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span><strong>Student Name:</strong></span>
+                                    <span>%s</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span><strong>Class:</strong></span>
+                                    <span>%s</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span><strong>Payment Amount:</strong></span>
+                                    <span class="amount">Rs. %,.2f</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span><strong>For Month:</strong></span>
+                                    <span>%s</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span><strong>Payment Method:</strong></span>
+                                    <span>%s</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span><strong>Transaction ID:</strong></span>
+                                    <span>%s</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span><strong>Payment Date:</strong></span>
+                                    <span>%s</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span><strong>Payment Status:</strong></span>
+                                    <span style="color: #4CAF50; font-weight: bold;">COMPLETED</span>
+                                </div>
+                            </div>
+                            
+                            <p><strong>Important Notes:</strong></p>
+                            <ul>
+                                <li>Please keep this email as your payment receipt</li>
+                                <li>Present this receipt if any payment verification is needed</li>
+                                <li>For any queries, contact the school accounts department</li>
+                            </ul>
+                            
+                            <p>Thank you for your timely payment.</p>
+                            
+                            <p>Best regards,<br>
+                            <strong>School Accounts Department</strong><br>
+                            School Management System</p>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>This is an automated message. Please do not reply to this email.</p>
+                            <p>© 2024 School Management System. All rights reserved.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """.formatted(
+                    studentName,
+                    student.getStudentId(),
+                    studentName,
+                    className,
+                    payment.getAmountPaid(),
+                    payment.getMonth(),
+                    payment.getPaymentMethod().toString(),
+                    payment.getTransactionId() != null ? payment.getTransactionId() : "N/A",
+                    payment.getPaymentDate().toString()
+                );
+        }
 }

@@ -6,6 +6,7 @@ public class LoginResponse {
     private String role;
     private String fullName;
     private String message;
+    private boolean success;
 
     public LoginResponse() {}
 
@@ -15,6 +16,16 @@ public class LoginResponse {
         this.role = role;
         this.fullName = fullName;
         this.message = message;
+        this.success = true;
+    }
+    
+    public LoginResponse(String token, String username, String role, String fullName, String message, boolean success) {
+        this.token = token;
+        this.username = username;
+        this.role = role;
+        this.fullName = fullName;
+        this.message = message;
+        this.success = success;
     }
 
     // Getters and Setters
@@ -32,4 +43,7 @@ public class LoginResponse {
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
+    
+    public boolean isSuccess() { return success; }
+    public void setSuccess(boolean success) { this.success = success; }
 }

@@ -571,3 +571,452 @@
     background: #bdc3c7;
     cursor: not-allowed;
 }
+
+/* Email Notification Styles */
+.email-notification-section {
+    margin: 20px 0;
+    border: 2px dashed #4CAF50;
+    border-radius: 10px;
+    padding: 20px;
+    background-color: #f1f8e9;
+}
+
+.email-notification {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.email-icon {
+    font-size: 28px;
+    color: #4CAF50;
+    background: white;
+    padding: 10px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.email-info h5 {
+    margin: 0 0 10px 0;
+    color: #2E7D32;
+    font-size: 18px;
+}
+
+.email-info ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.email-info li {
+    margin: 5px 0;
+    color: #555;
+}
+
+.student-email-target {
+    margin: 10px 0 0 0;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    border-left: 4px solid #2196F3;
+}
+
+.email-warning {
+    margin: 10px 0 0 0;
+    padding: 10px;
+    background: #FFF3CD;
+    border-radius: 6px;
+    border-left: 4px solid #FF9800;
+    color: #856404;
+}
+
+/* Receipt Download Section */
+.receipt-options-section {
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    border-radius: 12px;
+    padding: 25px;
+    margin: 25px 0;
+    border: 2px solid #4CAF50;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+}
+
+.receipt-header {
+    text-align: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(76, 175, 80, 0.3);
+}
+
+.receipt-header h4 {
+    color: #2E7D32;
+    margin-bottom: 8px;
+    font-size: 24px;
+}
+
+.receipt-header p {
+    color: #555;
+    font-size: 16px;
+}
+
+.receipt-details-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.receipt-summary h5 {
+    color: #333;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.receipt-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 6px;
+}
+
+.summary-item span:first-child {
+    font-weight: 600;
+    color: #555;
+}
+
+.amount-highlight {
+    font-weight: bold;
+    color: #2E7D32;
+    font-size: 18px;
+}
+
+.transaction-id {
+    font-family: monospace;
+    color: #2196F3;
+    font-weight: bold;
+}
+
+/* Receipt Action Buttons */
+.receipt-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.download-receipt-btn.primary {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    padding: 18px 30px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.download-receipt-btn.primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2E7D32, #1B5E20);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(46, 125, 50, 0.4);
+}
+
+.download-receipt-btn.primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.receipt-secondary-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 12px 24px;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn.preview {
+    background: #2196F3;
+    color: white;
+}
+
+.action-btn.preview:hover {
+    background: #1976D2;
+    transform: translateY(-1px);
+}
+
+.action-btn.print {
+    background: #FF9800;
+    color: white;
+}
+
+.action-btn.print:hover {
+    background: #F57C00;
+    transform: translateY(-1px);
+}
+
+.action-btn.done {
+    background: #757575;
+    color: white;
+}
+
+.action-btn.done:hover {
+    background: #616161;
+    transform: translateY(-1px);
+}
+
+.action-btn.next {
+    background: #9C27B0;
+    color: white;
+}
+
+.action-btn.next:hover {
+    background: #7B1FA2;
+    transform: translateY(-1px);
+}
+
+/* Email Confirmation Note */
+.email-confirmation-note {
+    margin-top: 20px;
+    padding: 15px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    border-left: 4px solid #2196F3;
+}
+
+.email-confirmation-note p {
+    margin: 5px 0;
+}
+
+.small-note {
+    font-size: 13px;
+    color: #666;
+    margin-top: 10px !important;
+}
+
+/* Spinner for PDF download */
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .receipt-summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .receipt-secondary-actions {
+        flex-direction: column;
+    }
+    
+    .action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Receipt Download Styles */
+.receipt-options-section {
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    border-radius: 10px;
+    padding: 25px;
+    margin: 25px 0;
+    border: 2px solid #4CAF50;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+.receipt-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.receipt-header h4 {
+    color: #2E7D32;
+    margin-bottom: 10px;
+    font-size: 22px;
+}
+
+.receipt-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .receipt-details {
+        grid-template-columns: 1fr;
+    }
+}
+
+.receipt-info {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #4CAF50;
+}
+
+.receipt-info p {
+    margin: 8px 0;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.receipt-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.download-receipt-btn {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.download-receipt-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2E7D32, #1B5E20);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(46, 125, 50, 0.3);
+}
+
+.download-receipt-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.receipt-secondary-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.preview-receipt-btn, .print-receipt-btn, .done-btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preview-receipt-btn {
+    background: #2196F3;
+    color: white;
+}
+
+.preview-receipt-btn:hover {
+    background: #1976D2;
+}
+
+.print-receipt-btn {
+    background: #FF9800;
+    color: white;
+}
+
+.print-receipt-btn:hover {
+    background: #F57C00;
+}
+
+.done-btn {
+    background: #757575;
+    color: white;
+}
+
+.done-btn:hover {
+    background: #616161;
+}
+
+/* PDF Preview Modal */
+.pdf-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.pdf-preview-content {
+    background: white;
+    width: 90%;
+    height: 90%;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.pdf-preview-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Spinner for PDF download */
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

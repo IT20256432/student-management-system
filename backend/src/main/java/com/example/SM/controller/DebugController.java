@@ -2,7 +2,16 @@ package com.example.SM.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/debug")
@@ -99,5 +109,51 @@ public class DebugController {
         }
         
         return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/security")
+    public Map<String, Object> getSecurityInfo() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        
+        Map<String, Object> info = new HashMap<>();
+        info.put("authenticated", auth != null && auth.isAuthenticated());
+        
+        if (auth != null) {
+            info.put("name", auth.getName());
+            info.put("principal", auth.getPrincipal().toString());
+            info.put("authorities", auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+        }
+        
+        return info;
+    }
+    
+    @GetMapping("/headers")
+    public Map<String, String> getHeaders(@RequestHeader Map<String, String> headers) {
+        Map<String, String> filteredHeaders = new HashMap<>();
+        
+        // Filter and display only relevant headers
+        headers.forEach((key, value) -> {
+            if (key.toLowerCase().contains("auth") || 
+                key.toLowerCase().contains("origin") || 
+                key.toLowerCase().contains("content") ||
+                key.equalsIgnoreCase("user-agent")) {
+                filteredHeaders.put(key, value);
+            }
+        });
+        
+        return filteredHeaders;
+    }
+    
+    @GetMapping("/config")
+    public Map<String, String> getConfig() {
+        Map<String, String> config = new HashMap<>();
+        config.put("server.port", "8080");
+        config.put("security.enabled", "true");
+        config.put("jwt.enabled", "true");
+        config.put("cors.enabled", "true");
+        config.put("auth.type", "JWT Bearer Token");
+        return config;
     }
 }

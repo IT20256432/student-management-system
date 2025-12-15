@@ -127,3 +127,59 @@
     font-size: 2rem;
   }
 }
+
+/* App.css */
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Coming Soon Styles */
+.coming-soon {
+  text-align: center;
+  padding: 40px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin: 20px auto;
+  max-width: 600px;
+}
+
+.coming-soon h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+/* Error Pages */
+.not-found, .unauthorized {
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.not-found h1, .unauthorized h1 {
+  color: #e74c3c;
+  margin-bottom: 20px;
+}
+
+.not-found button, .unauthorized button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 20px;
+}
+
+.not-found button:hover, .unauthorized button:hover {
+  background: #2980b9;
+}

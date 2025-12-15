@@ -60,4 +60,7 @@ public interface FeePaymentRepository extends JpaRepository<FeePayment, Long> {
     // Get recent payments count for statistics
     @Query("SELECT COUNT(fp) FROM FeePayment fp WHERE fp.paymentDate >= :startDate")
     Long countRecentPayments(@Param("startDate") LocalDate startDate);
+    
+    @Query("SELECT p FROM FeePayment p LEFT JOIN FETCH p.student LEFT JOIN FETCH p.schoolClass WHERE p.id = :id")
+    Optional<FeePayment> findByIdWithDetails(@Param("id") Long id);
 }

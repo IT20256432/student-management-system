@@ -53,42 +53,63 @@ const handleResponse = async (response) => {
   }
 };
 
-// Enhanced fetch wrapper with CORS handling
-const apiFetch = async (url, options = {}) => {
-  const fullUrl = `${API_BASE_URL}${url}`;
-  console.log(`🌐 API CALL: ${options.method || 'GET'} ${fullUrl}`);
-  
-  const defaultHeaders = {
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
   
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  console.log('🔑 Auth headers:', headers);
+  return headers;
+};
+
+// In your api.js, update the apiFetch function:
+const apiFetch = async (url, options = {}) => {
+  const fullUrl = `${API_BASE_URL}${url}`;
+  console.log(`🌐 API CALL: ${options.method || 'GET'} ${fullUrl}`);
+  
+  // ✅ Use getAuthHeaders directly (not authAPI.getAuthHeaders)
+  const authHeaders = getAuthHeaders();
+  
   const requestOptions = {
     ...options,
     mode: 'cors',
-    credentials: 'include', // Include cookies for CORS
+    credentials: 'include',
     headers: {
-      ...defaultHeaders,
+      ...authHeaders,
       ...options.headers,
     }
   };
   
   try {
     const response = await fetch(fullUrl, requestOptions);
+    
+    // Remove the 401 handling for now (it's causing issues)
+    // if (response.status === 401) {
+    //   console.log('🔒 Unauthorized - attempting token refresh...');
+    //   const refreshed = await authAPI.refreshToken();
+    //   if (!refreshed) {
+    //     console.log('❌ Token refresh failed, redirecting to login...');
+    //     authAPI.clearAuth();
+    //     window.location.href = '/login';
+    //     throw new Error('Session expired. Please login again.');
+    //   }
+    //   return apiFetch(url, options);
+    // }
+    
     return await handleResponse(response);
   } catch (error) {
     console.error(`💥 API Call Failed for ${fullUrl}:`, error);
-    
-    // Check for CORS or network errors
-    if (error.message.includes('Failed to fetch') || 
-        error.message.includes('NetworkError') ||
-        error.name === 'TypeError') {
-      throw new Error(`CORS/Network error: Cannot connect to backend at ${API_BASE_URL}. Check if Spring Boot is running and CORS is enabled.`);
-    }
-    
     throw error;
   }
 };
+  
+
 
 // API methods
 export const apiGet = (url) => apiFetch(url, { method: 'GET' });
@@ -226,14 +247,14 @@ export const feeAPI = {
       return data;
     }).catch(error => {
       console.warn(`⚠️ Fee structure not found for class ${classId}:`, error.message);
-      return null; // Return null instead of throwing for graceful fallback
+      return null;
     });
   },
   create: (feeData) => apiPost('/fees', feeData),
   update: (id, feeData) => apiPut(`/fees/${id}`, feeData),
   delete: (id) => apiDelete(`/fees/${id}`),
   
-  // ✅ ADD THIS MISSING METHOD:
+
   getStudentFeeStatus: async (studentId) => {
     console.log(`💰 [feeAPI] Getting fee status for student: ${studentId}`);
     
@@ -343,8 +364,243 @@ export const feePaymentAPI = {
     return apiPost('/fee-payments/record', paymentData);
   },
   
-  // Get student payments
-  getStudentPayments: (studentId) => apiGet(`/fee-payments/student/${encodeURIComponent(studentId)}`),
+  // FIXED: recordPaymentWithEmail - handles PDF download
+  recordPaymentWithEmail: async (paymentData) => {
+    console.log('📧 Recording payment with email confirmation:', paymentData);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/fee-payments/record-with-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/pdf, application/json' // Accept both
+        },
+        body: JSON.stringify(paymentData)
+      });
+      
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
+      
+      // Check content type
+      const contentType = response.headers.get('content-type') || '';
+      
+      if (contentType.includes('application/pdf')) {
+        // It's a PDF - download it
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        
+        // Get filename from headers
+        let filename = `Payment-Receipt-${Date.now()}.pdf`;
+        const contentDisposition = response.headers.get('content-disposition');
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename="?(.+?)"?$/);
+          if (match) filename = match[1];
+        }
+        
+        // Trigger download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+        
+        console.log('✅ PDF downloaded:', filename);
+        
+        // Return success object with transaction ID
+        return {
+          success: true,
+          message: 'Payment successful and receipt downloaded',
+          transactionId: paymentData.transactionId,
+          filename: filename,
+          pdfDownloaded: true
+        };
+        
+      } else if (contentType.includes('application/json')) {
+        // It's JSON - parse it
+        const result = await response.json();
+        console.log('✅ JSON response:', result);
+        return result;
+        
+      } else {
+        // Unknown content type - try to parse as text
+        const text = await response.text();
+        console.log('📄 Text response:', text.substring(0, 100));
+        
+        // Check if it looks like JSON
+        try {
+          const jsonResult = JSON.parse(text);
+          return jsonResult;
+        } catch {
+          throw new Error(`Unexpected response format: ${contentType}`);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Payment with email error:', error);
+      throw error;
+    }
+  },
+
+  recordPaymentAndDownload: async (paymentData) => {
+    console.log('💳 Recording payment and downloading receipt separately...');
+    
+    try {
+      // Step 1: Record payment (returns JSON with payment ID)
+      const result = await feePaymentAPI.recordPayment(paymentData);
+      
+      if (result && result.id) {
+        // Step 2: Send email confirmation
+        try {
+          await feePaymentAPI.sendPaymentEmail(result.id);
+          console.log('✅ Email sent');
+        } catch (emailError) {
+          console.warn('⚠️ Email failed:', emailError.message);
+          // Don't fail if email fails
+        }
+        
+        // Step 3: Download receipt
+        try {
+          await feePaymentAPI.downloadReceiptPDF(result.id);
+          console.log('✅ Receipt downloaded');
+        } catch (pdfError) {
+          console.warn('⚠️ PDF download failed:', pdfError.message);
+          // Don't fail if PDF download fails
+        }
+        
+        return result;
+      } else {
+        throw new Error('No payment ID returned');
+      }
+    } catch (error) {
+      console.error('❌ Payment and download error:', error);
+      throw error;
+    }
+  },
+  
+  sendPaymentEmail: async (paymentId) => {
+    try {
+      // You need to create this endpoint in your backend
+      const response = await apiPost(`/fee-payments/${paymentId}/send-email`, {});
+      console.log('📧 Email sending response:', response);
+      return response;
+    } catch (error) {
+      console.warn('Email send error:', error);
+      throw error;
+    }
+  },
+  
+  // In api.js - update the downloadReceiptPDF function:
+downloadReceiptPDF: async (paymentId) => {
+    try {
+        const token = localStorage.getItem('token');
+        console.log('📥 Downloading receipt for payment:', paymentId);
+        
+        const response = await fetch(`${API_BASE_URL}/fee-payments/receipt/${paymentId}/download`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/pdf', // ← FIX: Request PDF, not JSON
+                // Remove 'Content-Type' for GET requests
+            },
+            credentials: 'include'
+        });
+        
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+            // Try to get error message
+            let errorMessage = `HTTP ${response.status}`;
+            try {
+                const errorText = await response.text();
+                console.error('❌ Error response:', errorText);
+                errorMessage = errorText || errorMessage;
+            } catch (e) {
+                // Ignore
+            }
+            throw new Error(`Failed to download receipt: ${errorMessage}`);
+        }
+        
+        // Verify content type is PDF
+        const contentType = response.headers.get('content-type') || '';
+        console.log('📄 Content-Type:', contentType);
+        
+        if (!contentType.includes('application/pdf')) {
+            // If not PDF, read as text to see what's returned
+            const text = await response.text();
+            console.error('⚠️ Unexpected response (not PDF):', text.substring(0, 200));
+            
+            // Check if it's JSON error
+            try {
+                const jsonError = JSON.parse(text);
+                throw new Error(jsonError.error || 'Server returned error instead of PDF');
+            } catch {
+                throw new Error('Server did not return PDF. Got: ' + contentType);
+            }
+        }
+        
+        // Download PDF
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Get filename from headers or use default
+        let filename = `Receipt-${paymentId}.pdf`;
+        const contentDisposition = response.headers.get('content-disposition');
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?(.+?)"?$/);
+            if (match) filename = match[1];
+        }
+        
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        console.log('✅ PDF downloaded successfully:', filename);
+        return filename;
+        
+    } catch (error) {
+        console.error('❌ PDF download error:', error);
+        throw error;
+    }
+},  
+  
+  // ✅ ADD THIS FUNCTION FOR BASE64 RECEIPT:
+  getReceiptBase64: async (paymentId) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/fee-payments/receipt/${paymentId}/base64`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to get receipt data');
+      }
+      
+      return await response.json();
+      
+    } catch (error) {
+      console.error('❌ Receipt fetch error:', error);
+      throw error;
+    }
+  },
   
   // Get fee status (general) - WITH GRACE PERIOD SUPPORT
   getFeeStatus: async (studentId) => {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { studentAPI, attendanceAPI, classAPI, feePaymentAPI, sessionAPI } from '../services/api';
+import { authAPI } from '../services/authAPI';
+
 import './Dashboard.css';
 
 const Dashboard = () => {

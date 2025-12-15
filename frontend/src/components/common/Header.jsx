@@ -9,6 +9,10 @@ const Header = () => {
   const [currentTime, setCurrentTime] = useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState({
+    name: '',
+    role: ''
+  });
 
   const isActive = (path) => {
     return location.pathname === path ? 'active' : '';
@@ -27,9 +31,26 @@ const Header = () => {
 
     // Check if user is logged in
     const checkAuthStatus = () => {
-      const token = localStorage.getItem('authToken');
-      const user = localStorage.getItem('user');
-      setIsLoggedIn(!!token && !!user);
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+      
+      setIsLoggedIn(!!token && isAuthenticated);
+      
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setUserData({
+            name: user.fullName || user.username || 'Administrator',
+            role: user.role || 'Admin'
+          });
+        } catch (error) {
+          setUserData({
+            name: 'Administrator',
+            role: 'Admin'
+          });
+        }
+      }
     };
 
     updateTime();
@@ -49,23 +70,25 @@ const Header = () => {
 
   const handleLogout = async () => {
     try {
-      // Call logout API
-      const response = await fetch('http://localhost:8080/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include'
-      });
+      const token = localStorage.getItem('token');
+      
+      if (token) {
+        // Call logout API with Authorization header
+        await fetch('http://localhost:8080/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+      }
 
-      // Clear local storage
-      localStorage.removeItem('authToken');
+      // Clear all authentication data
+      localStorage.removeItem('token');
       localStorage.removeItem('user');
-      localStorage.removeItem('role');
-      localStorage.removeItem('username');
-
-      // Clear session storage
-      sessionStorage.clear();
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('loginTime');
 
       // Update state
       setIsLoggedIn(false);
@@ -79,26 +102,17 @@ const Header = () => {
       console.error('Logout error:', error);
       // Force logout even if API fails
       localStorage.clear();
-      sessionStorage.clear();
       navigate('/login');
     }
-  };
-
-  const handleQuickLogout = () => {
-    // Quick logout without confirmation for admin/dev
-    localStorage.clear();
-    sessionStorage.clear();
-    navigate('/login');
   };
 
   return (
     <>
       <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
         <div className="header-content">
-          <Link to="/" className="logo">
+          <Link to="/dashboard" className="logo">
             <div className="logo-icon">
-              <div className="logo-icon">🎓</div>
-              <div className="icon-star"></div>
+              <div className="logo-symbol">🎓</div>
             </div>
             <div className="logo-text">
               <h1>Sammana</h1>
@@ -109,55 +123,69 @@ const Header = () => {
           <nav className="nav">
             <Link to="/dashboard" className={`nav-link ${isActive('/dashboard')}`}>
               <span className="nav-icon">📊</span>
-              Dashboard
+              <span className="nav-text">Dashboard</span>
             </Link>
             <Link to="/register" className={`nav-link ${isActive('/register')}`}>
               <span className="nav-icon">👤</span>
-              Register
+              <span className="nav-text">Register</span>
             </Link>
             <Link to="/attendance" className={`nav-link ${isActive('/attendance')}`}>
               <span className="nav-icon">✅</span>
-              Attendance
+              <span className="nav-text">Attendance</span>
             </Link>
             <Link to="/students" className={`nav-link ${isActive('/students')}`}>
               <span className="nav-icon">🎓</span>
-              Students
+              <span className="nav-text">Students</span>
+            </Link>
+            <Link to="/students" className={`nav-link ${isActive('/payments')}`}>
+              <span className="nav-icon">🎓</span>
+              <span className="nav-text">Payments</span>
             </Link>
             <Link to="/reports" className={`nav-link ${isActive('/reports')}`}>
               <span className="nav-icon">📈</span>
-              Reports
+              <span className="nav-text">Reports</span>
             </Link>
           </nav>
 
           <div className="header-right">
             <div className="header-info">
-              <div className="current-time">{currentTime}</div>
+              <div className="current-time">
+                <span className="time-icon">🕒</span>
+                {currentTime}
+              </div>
               <div className="institute-badge">Excellence in Education</div>
             </div>
             
-            {/* User Info & Logout Button */}
-            <div className="user-section">
+            {/* User Profile & Logout Section */}
+            <div className="user-profile-section">
               {isLoggedIn ? (
-                <>
-                  <div className="user-info">
-                    <span className="user-icon">👤</span>
-                    <span className="username">
-                      {localStorage.getItem('username') || 'Admin'}
-                    </span>
+                <div className="user-profile">
+                  <div className="user-details">
+                    <div className="user-name">{userData.name}</div>
+                    <div className="user-role">{userData.role}</div>
                   </div>
+                  
                   <button 
-                    className="logout-btn"
+                    className="logout-button"
                     onClick={() => setShowLogoutConfirm(true)}
                     title="Logout"
                   >
-                    <span className="logout-icon">🚪</span>
-                    <span className="logout-text">Logout</span>
+                    <svg className="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M16 17l5-5-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M21 12H9" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <span className="logout-button-text">Logout</span>
                   </button>
-                </>
+                </div>
               ) : (
-                <Link to="/login" className="login-btn">
-                  <span className="login-icon">🔑</span>
-                  <span className="login-text">Logout</span>
+                <Link to="/login" className="login-button">
+                  <svg className="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M10 17l5-5-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M15 12H3" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span className="login-button-text">Login</span> {/* Fixed: Changed from Logout to Login */}
                 </Link>
               )}
             </div>
@@ -176,32 +204,35 @@ const Header = () => {
       {showLogoutConfirm && (
         <div className="logout-modal-overlay">
           <div className="logout-modal">
-            <div className="modal-icon">⚠️</div>
+            <div className="modal-icon">🔒</div>
             <h3>Confirm Logout</h3>
-            <p>Are you sure you want to log out of the system?</p>
+            <p>Are you sure you want to log out of your account?</p>
+            
+            <div className="current-user-info">
+              <div className="current-user-avatar">👤</div>
+              <div>
+                <div className="current-user-name">{userData.name}</div>
+                <div className="current-user-role">{userData.role}</div>
+              </div>
+            </div>
             
             <div className="modal-actions">
-              <button 
-                className="modal-btn confirm-btn"
-                onClick={handleLogout}
-              >
-                Yes, Logout
-              </button>
               <button 
                 className="modal-btn cancel-btn"
                 onClick={() => setShowLogoutConfirm(false)}
               >
                 Cancel
               </button>
-            </div>
-            
-            <div className="modal-footer">
               <button 
-                className="quick-logout-btn"
-                onClick={handleQuickLogout}
-                title="Admin Quick Logout"
+                className="modal-btn confirm-btn"
+                onClick={handleLogout}
               >
-                Force Logout (Admin)
+                <svg className="confirm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M16 17l5-5-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M21 12H9" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Logout
               </button>
             </div>
           </div>

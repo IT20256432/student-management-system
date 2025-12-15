@@ -19,6 +19,12 @@ const FeePaymentScanner = () => {
     const [availableClasses, setAvailableClasses] = useState([]);
     const [showClassSelection, setShowClassSelection] = useState(false);
     const [selectedPaymentClass, setSelectedPaymentClass] = useState(null);
+    
+    // NEW STATES FOR EMAIL & PDF RECEIPT
+    const [showReceiptOptions, setShowReceiptOptions] = useState(false);
+    const [lastPaymentId, setLastPaymentId] = useState(null);
+    const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+    const [receiptData, setReceiptData] = useState(null);
 
     const html5QrCodeRef = useRef(null);
     const readerId = "fee-qr-reader";
@@ -89,6 +95,9 @@ const FeePaymentScanner = () => {
         setError(null);
         setAvailableClasses([]);
         setShowClassSelection(false);
+        setShowReceiptOptions(false);
+        setLastPaymentId(null);
+        setReceiptData(null);
         setPaymentForm({
             amount: '',
             paymentMethod: 'CASH',
@@ -125,103 +134,103 @@ const FeePaymentScanner = () => {
         return defaultFees[grade] || defaultFees['O/L'];
     };
 
-const processQRData = async (qrData) => {
-  try {
-    const studentData = JSON.parse(qrData);
-    console.log("📊 Processing student QR data:", studentData);
-    
-    // Get student details
-    let student;
-    try {
-      student = await studentAPI.getByStudentId(studentData.studentId);
-      console.log("✅ Student found in database:", student);
-    } catch (apiError) {
-      console.log("❌ Student not found, using QR data");
-      student = {
-        studentId: studentData.studentId,
-        firstName: studentData.firstName,
-        lastName: studentData.lastName,
-        grade: studentData.grade,
-        email: studentData.email,
-        id: studentData.studentId,
-        status: 'Active',
-        _fromQR: true
-      };
-    }
-    
-    // ALWAYS USE QUERY PARAMETER (it's working!)
-    let classes = [];
-    try {
-      console.log(`🔄 Fetching classes for grade: ${student.grade}`);
-      
-      // Method 1: Use query parameter (the one that works)
-      const response = await fetch(
-        `http://localhost:8080/api/classes/by-grade?grade=${encodeURIComponent(student.grade)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          mode: 'cors'
+    const processQRData = async (qrData) => {
+      try {
+        const studentData = JSON.parse(qrData);
+        console.log("📊 Processing student QR data:", studentData);
+        
+        // Get student details
+        let student;
+        try {
+          student = await studentAPI.getByStudentId(studentData.studentId);
+          console.log("✅ Student found in database:", student);
+        } catch (apiError) {
+          console.log("❌ Student not found, using QR data");
+          student = {
+            studentId: studentData.studentId,
+            firstName: studentData.firstName,
+            lastName: studentData.lastName,
+            grade: studentData.grade,
+            email: studentData.email,
+            id: studentData.studentId,
+            status: 'Active',
+            _fromQR: true
+          };
         }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        classes = data.classes || [];
-        console.log(`✅ Query param successful: Found ${classes.length} classes`);
-      } else {
-        console.log(`❌ Query param failed: ${response.status}`);
-        throw new Error(`HTTP ${response.status}`);
+        
+        // ALWAYS USE QUERY PARAMETER (it's working!)
+        let classes = [];
+        try {
+          console.log(`🔄 Fetching classes for grade: ${student.grade}`);
+          
+          // Method 1: Use query parameter (the one that works)
+          const response = await fetch(
+            `http://localhost:8080/api/classes/by-grade?grade=${encodeURIComponent(student.grade)}`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              mode: 'cors'
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            classes = data.classes || [];
+            console.log(`✅ Query param successful: Found ${classes.length} classes`);
+          } else {
+            console.log(`❌ Query param failed: ${response.status}`);
+            throw new Error(`HTTP ${response.status}`);
+          }
+        } catch (error) {
+          console.error('❌ Error loading classes:', error);
+          classes = createFallbackClasses(student.grade);
+          console.log(`🔄 Using ${classes.length} fallback classes`);
+        }
+        
+        if (classes.length === 0) {
+          classes = createFallbackClasses(student.grade);
+        }
+
+        setAvailableClasses(classes);
+        
+        // If only one class, auto-select it
+        if (classes.length === 1) {
+          await selectClassForPayment(student, classes[0]);
+        } else {
+          // Multiple classes - show selection
+          setScannedStudent(student);
+          setShowClassSelection(true);
+        }
+
+      } catch (error) {
+        console.error('❌ Error processing QR:', error);
+        setError(`Error: ${error.message}`);
       }
-    } catch (error) {
-      console.error('❌ Error loading classes:', error);
-      classes = createFallbackClasses(student.grade);
-      console.log(`🔄 Using ${classes.length} fallback classes`);
-    }
-    
-    if (classes.length === 0) {
-      classes = createFallbackClasses(student.grade);
-    }
-
-    setAvailableClasses(classes);
-    
-    // If only one class, auto-select it
-    if (classes.length === 1) {
-      await selectClassForPayment(student, classes[0]);
-    } else {
-      // Multiple classes - show selection
-      setScannedStudent(student);
-      setShowClassSelection(true);
-    }
-
-  } catch (error) {
-    console.error('❌ Error processing QR:', error);
-    setError(`Error: ${error.message}`);
-  }
-};
-
-// Add this helper function for fallback classes
-const createFallbackClasses = (grade) => {
-    const fallbackClasses = {
-        'A/L': [
-            { id: 1, className: `${grade} Mathematics`, grade: grade, classTeacher: 'Math Teacher', roomNumber: '101' },
-            { id: 2, className: `${grade} Physics`, grade: grade, classTeacher: 'Physics Teacher', roomNumber: '102' },
-            { id: 3, className: `${grade} Chemistry`, grade: grade, classTeacher: 'Chemistry Teacher', roomNumber: '103' },
-            { id: 4, className: `${grade} Biology`, grade: grade, classTeacher: 'Biology Teacher', roomNumber: '104' }
-        ],
-        'O/L': [
-            { id: 5, className: `${grade} Mathematics`, grade: grade, classTeacher: 'Math Teacher', roomNumber: '201' },
-            { id: 6, className: `${grade} Science`, grade: grade, classTeacher: 'Science Teacher', roomNumber: '202' },
-            { id: 7, className: `${grade} English`, grade: grade, classTeacher: 'English Teacher', roomNumber: '203' },
-            { id: 8, className: `${grade} Sinhala`, grade: grade, classTeacher: 'Sinhala Teacher', roomNumber: '204' }
-        ]
     };
-    
-    return fallbackClasses[grade] || [
-        { id: 9, className: `${grade} General`, grade: grade, classTeacher: 'Class Teacher', roomNumber: '301' }
-    ];
-};
+
+    // Add this helper function for fallback classes
+    const createFallbackClasses = (grade) => {
+        const fallbackClasses = {
+            'A/L': [
+                { id: 1, className: `${grade} Mathematics`, grade: grade, classTeacher: 'Math Teacher', roomNumber: '101' },
+                { id: 2, className: `${grade} Physics`, grade: grade, classTeacher: 'Physics Teacher', roomNumber: '102' },
+                { id: 3, className: `${grade} Chemistry`, grade: grade, classTeacher: 'Chemistry Teacher', roomNumber: '103' },
+                { id: 4, className: `${grade} Biology`, grade: grade, classTeacher: 'Biology Teacher', roomNumber: '104' }
+            ],
+            'O/L': [
+                { id: 5, className: `${grade} Mathematics`, grade: grade, classTeacher: 'Math Teacher', roomNumber: '201' },
+                { id: 6, className: `${grade} Science`, grade: grade, classTeacher: 'Science Teacher', roomNumber: '202' },
+                { id: 7, className: `${grade} English`, grade: grade, classTeacher: 'English Teacher', roomNumber: '203' },
+                { id: 8, className: `${grade} Sinhala`, grade: grade, classTeacher: 'Sinhala Teacher', roomNumber: '204' }
+            ]
+        };
+        
+        return fallbackClasses[grade] || [
+            { id: 9, className: `${grade} General`, grade: grade, classTeacher: 'Class Teacher', roomNumber: '301' }
+        ];
+    };
 
     // SELECT CLASS FOR PAYMENT
     const selectClassForPayment = async (student, classObj) => {
@@ -291,7 +300,7 @@ const createFallbackClasses = (grade) => {
         try {
             const paymentData = {
                 studentId: scannedStudent.studentId,
-                classId: selectedPaymentClass.id, // THIS IS REQUIRED
+                classId: selectedPaymentClass.id,
                 amountPaid: parseFloat(paymentForm.amount),
                 paymentDate: new Date().toISOString().split('T')[0],
                 month: paymentForm.month,
@@ -300,24 +309,41 @@ const createFallbackClasses = (grade) => {
                 notes: paymentForm.notes
             };
 
-            console.log("💳 Recording payment:", paymentData);
+            console.log("💳 Recording payment with email...");
             
-            const result = await feePaymentAPI.recordPayment(paymentData);
-            console.log("✅ Payment recorded:", result);
+            // NEW: Use the email-enabled endpoint
+            const result = await feePaymentAPI.recordPaymentWithEmail(paymentData);
+            console.log("✅ Payment recorded with email:", result);
+            
+            // Save payment ID and receipt data
+            setLastPaymentId(result.id);
+            setReceiptData({
+                studentName: scannedStudent.firstName + " " + scannedStudent.lastName,
+                studentId: scannedStudent.studentId,
+                className: selectedPaymentClass.className,
+                amount: paymentForm.amount,
+                month: paymentForm.month,
+                date: new Date().toISOString().split('T')[0],
+                transactionId: paymentData.transactionId,
+                studentEmail: scannedStudent.email
+            });
+            
+            // Show receipt download options
+            setShowReceiptOptions(true);
 
             // Refresh fee status
-            const updatedStatus = await feePaymentAPI.getFeeStatusForClass(scannedStudent.studentId, selectedPaymentClass.id);
+            const updatedStatus = await feePaymentAPI.getFeeStatusForClass(
+                scannedStudent.studentId, 
+                selectedPaymentClass.id
+            );
             setFeeStatus(updatedStatus);
 
-            // Reset form
-            setPaymentForm({
-                amount: '',
-                paymentMethod: 'CASH',
-                month: new Date().toISOString().substring(0, 7),
-                notes: ''
-            });
-
-            alert(`✅ Payment recorded successfully for ${selectedPaymentClass.className}!`);
+            // Show success message with email info
+            if (scannedStudent.email) {
+                setError(`✅ Payment recorded successfully! Confirmation email sent to ${scannedStudent.email}`);
+            } else {
+                setError("✅ Payment recorded successfully! (No email sent - student email not available)");
+            }
 
         } catch (err) {
             console.error("❌ Payment error:", err);
@@ -325,6 +351,137 @@ const createFallbackClasses = (grade) => {
         } finally {
             setIsProcessing(false);
         }
+    };
+
+    // NEW: DOWNLOAD PDF RECEIPT
+    const handleDownloadReceipt = async () => {
+        if (!lastPaymentId) return;
+        
+        setIsDownloadingPDF(true);
+        try {
+            const filename = await feePaymentAPI.downloadReceiptPDF(lastPaymentId);
+            console.log("✅ Receipt downloaded:", filename);
+            
+            // Show success message
+            setError(`✅ Receipt downloaded: ${filename}`);
+            
+            // Auto-close receipt options after download
+            setTimeout(() => {
+                setShowReceiptOptions(false);
+                setPaymentForm({
+                    amount: '',
+                    paymentMethod: 'CASH',
+                    month: new Date().toISOString().substring(0, 7),
+                    notes: ''
+                });
+            }, 3000);
+            
+        } catch (error) {
+            console.error("❌ Receipt download failed:", error);
+            setError("Failed to download receipt: " + error.message);
+        } finally {
+            setIsDownloadingPDF(false);
+        }
+    };
+
+    // NEW: PREVIEW RECEIPT IN NEW TAB
+    const handlePreviewReceipt = async () => {
+        if (!lastPaymentId) return;
+        
+        setIsDownloadingPDF(true);
+        try {
+            const receipt = await feePaymentAPI.getReceiptBase64(lastPaymentId);
+            
+            // Open PDF in new tab
+            const pdfWindow = window.open();
+            if (pdfWindow) {
+                pdfWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Receipt Preview - ${receipt.filename}</title>
+                    </head>
+                    <body style="margin: 0; padding: 0;">
+                        <embed 
+                            src="data:application/pdf;base64,${receipt.pdfBase64}" 
+                            type="application/pdf" 
+                            width="100%" 
+                            height="100%"
+                            style="position: absolute; top: 0; left: 0;"
+                        />
+                    </body>
+                    </html>
+                `);
+            }
+        } catch (error) {
+            console.error("❌ Receipt preview failed:", error);
+            setError("Failed to preview receipt: " + error.message);
+        } finally {
+            setIsDownloadingPDF(false);
+        }
+    };
+
+    // NEW: PRINT RECEIPT
+    const handlePrintReceipt = async () => {
+        if (!lastPaymentId) return;
+        
+        setIsDownloadingPDF(true);
+        try {
+            const receipt = await feePaymentAPI.getReceiptBase64(lastPaymentId);
+            
+            // Create iframe for printing
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(`
+                <html>
+                <head>
+                    <title>Print Receipt</title>
+                    <style>
+                        body { margin: 0; padding: 0; }
+                        @media print {
+                            body { margin: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <embed 
+                        src="data:application/pdf;base64,${receipt.pdfBase64}" 
+                        type="application/pdf" 
+                        width="100%" 
+                        height="100%"
+                    />
+                </body>
+                </html>
+            `);
+            doc.close();
+            
+            // Wait for PDF to load then print
+            iframe.onload = () => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                document.body.removeChild(iframe);
+            };
+            
+        } catch (error) {
+            console.error("❌ Print failed:", error);
+            setError("Failed to print receipt: " + error.message);
+        } finally {
+            setIsDownloadingPDF(false);
+        }
+    };
+
+    // NEW: RESET AFTER PAYMENT
+    const handlePaymentComplete = () => {
+        setShowReceiptOptions(false);
+        setPaymentForm({
+            amount: '',
+            paymentMethod: 'CASH',
+            month: new Date().toISOString().substring(0, 7),
+            notes: ''
+        });
     };
 
     const scanNext = async () => {
@@ -516,6 +673,33 @@ const createFallbackClasses = (grade) => {
                         </div>
                     </div>
 
+                    {/* NEW: Email Notification Section */}
+                    {!showReceiptOptions && (
+                        <div className="email-notification-section">
+                            <div className="email-notification">
+                                <div className="email-icon">📧</div>
+                                <div className="email-info">
+                                    <h5>Payment Confirmation</h5>
+                                    <p>After successful payment:</p>
+                                    <ul>
+                                        <li>✅ Automatic confirmation email sent to student</li>
+                                        <li>📄 Downloadable PDF receipt available</li>
+                                        <li>🖨️ Print or save receipt for records</li>
+                                    </ul>
+                                    {scannedStudent.email ? (
+                                        <p className="student-email-target">
+                                            <strong>Email will be sent to:</strong> {scannedStudent.email}
+                                        </p>
+                                    ) : (
+                                        <p className="email-warning">
+                                            ⚠️ No email on record. Student won't receive email confirmation.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Payment Form */}
                     <div className="payment-form-card">
                         <h4>Record Payment for {selectedPaymentClass.className}</h4>
@@ -609,6 +793,108 @@ const createFallbackClasses = (grade) => {
                             </button>
                         </div>
                     </div>
+
+                    {/* NEW: Receipt Download Section */}
+                    {showReceiptOptions && receiptData && (
+                        <div className="receipt-options-section">
+                            <div className="receipt-header">
+                                <h4>🎉 Payment Successful!</h4>
+                                <p>Your payment has been processed. Download your official receipt below.</p>
+                            </div>
+                            
+                            <div className="receipt-details-card">
+                                <div className="receipt-summary">
+                                    <h5>Payment Summary</h5>
+                                    <div className="receipt-summary-grid">
+                                        <div className="summary-item">
+                                            <span>Student:</span>
+                                            <span>{receiptData.studentName}</span>
+                                        </div>
+                                        <div className="summary-item">
+                                            <span>Class:</span>
+                                            <span>{receiptData.className}</span>
+                                        </div>
+                                        <div className="summary-item">
+                                            <span>Amount Paid:</span>
+                                            <span className="amount-highlight">
+                                                {formatCurrency(parseFloat(receiptData.amount))}
+                                            </span>
+                                        </div>
+                                        <div className="summary-item">
+                                            <span>For Month:</span>
+                                            <span>{receiptData.month}</span>
+                                        </div>
+                                        <div className="summary-item">
+                                            <span>Transaction ID:</span>
+                                            <span className="transaction-id">{receiptData.transactionId}</span>
+                                        </div>
+                                        <div className="summary-item">
+                                            <span>Date:</span>
+                                            <span>{receiptData.date}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="receipt-actions">
+                                    <button 
+                                        onClick={handleDownloadReceipt}
+                                        disabled={isDownloadingPDF}
+                                        className="download-receipt-btn primary"
+                                    >
+                                        {isDownloadingPDF ? (
+                                            <>
+                                                <div className="spinner-small"></div>
+                                                Downloading PDF...
+                                            </>
+                                        ) : (
+                                            '📥 Download Official Receipt (PDF)'
+                                        )}
+                                    </button>
+                                    
+                                    <div className="receipt-secondary-actions">
+                                        <button 
+                                            onClick={handlePreviewReceipt}
+                                            disabled={isDownloadingPDF}
+                                            className="action-btn preview"
+                                        >
+                                            👁️ Preview Receipt
+                                        </button>
+                                        
+                                        <button 
+                                            onClick={handlePrintReceipt}
+                                            disabled={isDownloadingPDF}
+                                            className="action-btn print"
+                                        >
+                                            🖨️ Print Receipt
+                                        </button>
+                                        
+                                        <button 
+                                            onClick={handlePaymentComplete}
+                                            className="action-btn done"
+                                        >
+                                            ✓ Done
+                                        </button>
+                                        
+                                        <button 
+                                            onClick={scanNext}
+                                            className="action-btn next"
+                                        >
+                                            🔄 Scan Next Student
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="email-confirmation-note">
+                                        {receiptData.studentEmail ? (
+                                            <p>📧 A confirmation email has been sent to: <strong>{receiptData.studentEmail}</strong></p>
+                                        ) : (
+                                            <p>⚠️ No email confirmation sent (email not available)</p>
+                                        )}
+                                        <p className="small-note">Keep this receipt for your records. You can also download it later from payment history.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
