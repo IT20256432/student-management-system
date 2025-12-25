@@ -420,7 +420,7 @@ const handleSubmit = async (e) => {
     console.log('📋 School Class ID:', formData.schoolClass?.id);
 
     // ✅ USE THE SIMPLE ENDPOINT
-    const response = await fetch('http://localhost:8080/api/students/register-simple', {
+    const response = await fetch('https://management.sammanaedu.com/api/students/register-simple', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(submissionData)

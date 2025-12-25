@@ -165,7 +165,7 @@ const FeePaymentScanner = () => {
           
           // Method 1: Use query parameter (the one that works)
           const response = await fetch(
-            `http://localhost:8080/api/classes/by-grade?grade=${encodeURIComponent(student.grade)}`,
+            `https://management.sammanaedu.com/api/classes/by-grade?grade=${encodeURIComponent(student.grade)}`,
             {
               method: 'GET',
               headers: {
