@@ -1,6 +1,5 @@
 const API_BASE_URL = 'https://management.sammanaedu.com/api';
 
-// Enhanced response handler
 const handleResponse = async (response) => {
   console.log(`🔍 API Response Code: ${response.status}`);
   
@@ -11,44 +10,47 @@ const handleResponse = async (response) => {
 
   const contentType = response.headers.get('content-type');
   
-  // Handle API errors
-  if (!response.ok) {
-    let errorMessage;
-    
-    try {
-      if (contentType && contentType.includes('application/json')) {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorData.message || `HTTP ${response.status}`;
-      } else {
-        const errorText = await response.text();
-        errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
-      }
-    } catch (parseError) {
-      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-    }
-    
-    console.error('❌ API Error Details:', {
-      status: response.status,
-      message: errorMessage,
-      url: response.url
-    });
-    
-    throw new Error(errorMessage);
-  }
-  
-  // Handle successful responses
   try {
+    // Read the body ONCE based on content type
+    let result;
+    
     if (contentType && contentType.includes('application/json')) {
-      const data = await response.json();
-      console.log('✅ API Success - JSON Data received');
-      return data;
+      result = await response.json();
     } else {
-      const text = await response.text();
-      console.log('✅ API Success - Text Data received');
-      return text;
+      result = await response.text();
     }
-  } catch (parseError) {
-    console.error('❌ Response Parse Error:', parseError);
+    
+    // Check if response was successful
+    if (!response.ok) {
+      // Handle error with already-read result
+      const errorMessage = result?.error || result?.message || 
+                          (typeof result === 'string' ? result : `HTTP ${response.status}`);
+      
+      console.error('❌ API Error Details:', {
+        status: response.status,
+        message: errorMessage,
+        url: response.url
+      });
+      
+      throw new Error(errorMessage);
+    }
+    
+    // Success case
+    console.log('✅ API Success - Data received');
+    return result;
+    
+  } catch (error) {
+    // If we couldn't parse the body at all
+    if (!response.ok) {
+      console.error('❌ API Error (no body):', {
+        status: response.status,
+        url: response.url
+      });
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    // Parse error for successful response
+    console.error('❌ Response Parse Error:', error);
     throw new Error('Failed to parse response');
   }
 };
