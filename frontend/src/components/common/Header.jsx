@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Header.css';
 
@@ -13,6 +13,9 @@ const Header = () => {
     name: '',
     role: ''
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef(null);
+  const hamburgerRef = useRef(null);
 
   const isActive = (path) => {
     return location.pathname === path ? 'active' : '';
@@ -53,6 +56,25 @@ const Header = () => {
       }
     };
 
+    // Close mobile menu when clicking outside
+    const handleClickOutside = (event) => {
+      if (
+        mobileMenuRef.current && 
+        !mobileMenuRef.current.contains(event.target) &&
+        hamburgerRef.current &&
+        !hamburgerRef.current.contains(event.target)
+      ) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    // Handle escape key
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
     updateTime();
     const timeInterval = setInterval(updateTime, 60000);
     checkAuthStatus();
@@ -60,21 +82,24 @@ const Header = () => {
     // Listen for auth changes
     window.addEventListener('storage', checkAuthStatus);
     window.addEventListener('scroll', handleScroll);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscapeKey);
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('storage', checkAuthStatus);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
       clearInterval(timeInterval);
     };
-  }, []);
+  }, [isMobileMenuOpen]);
 
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem('token');
       
       if (token) {
-        // Call logout API with Authorization header
-        await fetch('http://localhost:8080/api/auth/logout', {
+        await fetch('https://management.sammanaedu.com/api/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -84,70 +109,77 @@ const Header = () => {
         });
       }
 
-      // Clear all authentication data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('loginTime');
 
-      // Update state
       setIsLoggedIn(false);
       setShowLogoutConfirm(false);
+      setIsMobileMenuOpen(false);
 
-      // Redirect to login page
       navigate('/login');
-      
-      console.log('✅ Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
-      // Force logout even if API fails
       localStorage.clear();
       navigate('/login');
     }
   };
 
+  const navLinks = [
+    { path: '/dashboard', icon: '📊', text: 'Dashboard' },
+    { path: '/register', icon: '👤', text: 'Register' },
+    { path: '/attendance', icon: '✅', text: 'Attendance' },
+    { path: '/fee-payment', icon: '💳', text: 'Payments' }, 
+    { path: '/students', icon: '🎓', text: 'Students' },
+    { path: '/reports', icon: '📈', text: 'Reports' },
+  ];
+
   return (
     <>
       <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
         <div className="header-content">
-          <Link to="/dashboard" className="logo">
-            <div className="logo-icon">
-              <div className="logo-symbol">🎓</div>
-            </div>
-            <div className="logo-text">
-              <h1>Sammana</h1>
-              <span>Educational Institute</span>
-            </div>
-          </Link>
+          {/* Logo and Hamburger Container */}
+          <div className="mobile-header-left">
+            <button 
+              ref={hamburgerRef}
+              className={`hamburger-menu ${isMobileMenuOpen ? 'active' : ''}`}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
 
-          <nav className="nav">
-            <Link to="/dashboard" className={`nav-link ${isActive('/dashboard')}`}>
-              <span className="nav-icon">📊</span>
-              <span className="nav-text">Dashboard</span>
+            <Link to="/dashboard" className="logo">
+              <div className="logo-icon">
+                <div className="logo-symbol">🎓</div>
+              </div>
+              <div className="logo-text">
+                <h1>Sammana</h1>
+                <span>Educational Institute</span>
+              </div>
             </Link>
-            <Link to="/register" className={`nav-link ${isActive('/register')}`}>
-              <span className="nav-icon">👤</span>
-              <span className="nav-text">Register</span>
-            </Link>
-            <Link to="/attendance" className={`nav-link ${isActive('/attendance')}`}>
-              <span className="nav-icon">✅</span>
-              <span className="nav-text">Attendance</span>
-            </Link>
-            <Link to="/students" className={`nav-link ${isActive('/students')}`}>
-              <span className="nav-icon">🎓</span>
-              <span className="nav-text">Students</span>
-            </Link>
-            <Link to="/students" className={`nav-link ${isActive('/payments')}`}>
-              <span className="nav-icon">🎓</span>
-              <span className="nav-text">Payments</span>
-            </Link>
-            <Link to="/reports" className={`nav-link ${isActive('/reports')}`}>
-              <span className="nav-icon">📈</span>
-              <span className="nav-text">Reports</span>
-            </Link>
+          </div>
+
+          {/* Desktop Navigation - Hidden on Mobile */}
+          <nav className="nav desktop-nav">
+            {navLinks.map((link) => (
+              <Link 
+                key={link.path} 
+                to={link.path} 
+                className={`nav-link ${isActive(link.path)}`}
+              >
+                <span className="nav-icon">{link.icon}</span>
+                <span className="nav-text">{link.text}</span>
+              </Link>
+            ))}
           </nav>
 
           <div className="header-right">
+            {/* Time and Badge - Hidden on Mobile */}
             <div className="header-info">
               <div className="current-time">
                 <span className="time-icon">🕒</span>
@@ -160,13 +192,18 @@ const Header = () => {
             <div className="user-profile-section">
               {isLoggedIn ? (
                 <div className="user-profile">
+                  <div className="user-avatar" onClick={() => setIsMobileMenuOpen(true)}>
+                    <div className="avatar-icon">👤</div>
+                    <div className="user-status-indicator"></div>
+                  </div>
+                  
                   <div className="user-details">
                     <div className="user-name">{userData.name}</div>
                     <div className="user-role">{userData.role}</div>
                   </div>
                   
                   <button 
-                    className="logout-button"
+                    className="logout-button desktop-logout"
                     onClick={() => setShowLogoutConfirm(true)}
                     title="Logout"
                   >
@@ -179,24 +216,95 @@ const Header = () => {
                   </button>
                 </div>
               ) : (
-                <Link to="/login" className="login-button">
+                <Link to="/login" className="login-button desktop-login">
                   <svg className="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" strokeWidth="2" strokeLinecap="round"/>
                     <path d="M10 17l5-5-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M15 12H3" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                  <span className="login-button-text">Login</span> {/* Fixed: Changed from Logout to Login */}
+                  <span className="login-button-text">Login</span>
                 </Link>
               )}
             </div>
           </div>
         </div>
-        
-        {/* Animated background elements */}
-        <div className="header-bg-elements">
-          <div className="bg-circle-1"></div>
-          <div className="bg-circle-2"></div>
-          <div className="bg-circle-3"></div>
+
+        {/* Mobile Navigation Menu */}
+        <div className={`mobile-menu-overlay ${isMobileMenuOpen ? 'active' : ''}`}>
+          <nav className={`mobile-nav ${isMobileMenuOpen ? 'active' : ''}`} ref={mobileMenuRef}>
+            <div className="mobile-nav-header">
+              <div className="mobile-user-info">
+                <div className="mobile-user-avatar">
+                  <div className="avatar-icon">👤</div>
+                  <div className="user-status-indicator"></div>
+                </div>
+                <div>
+                  <div className="mobile-user-name">{isLoggedIn ? userData.name : 'Guest'}</div>
+                  <div className="mobile-user-role">{isLoggedIn ? userData.role : 'Please login'}</div>
+                </div>
+              </div>
+              <button 
+                className="mobile-menu-close"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="mobile-nav-links">
+              {navLinks.map((link) => (
+                <Link 
+                  key={link.path} 
+                  to={link.path} 
+                  className={`mobile-nav-link ${isActive(link.path)}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className="mobile-nav-icon">{link.icon}</span>
+                  <span className="mobile-nav-text">{link.text}</span>
+                </Link>
+              ))}
+            </div>
+            
+            <div className="mobile-nav-footer">
+              <div className="mobile-current-time">
+                <span className="mobile-time-icon">🕒</span>
+                {currentTime}
+              </div>
+              <div className="mobile-institute-badge">
+                Excellence in Education
+              </div>
+              {isLoggedIn ? (
+                <button 
+                  className="mobile-logout-btn"
+                  onClick={() => {
+                    setShowLogoutConfirm(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <svg className="mobile-logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M16 17l5-5-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M21 12H9" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Logout
+                </button>
+              ) : (
+                <Link 
+                  to="/login" 
+                  className="mobile-login-btn"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <svg className="mobile-login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M10 17l5-5-5-5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M15 12H3" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Login
+                </Link>
+              )}
+            </div>
+          </nav>
         </div>
       </header>
 

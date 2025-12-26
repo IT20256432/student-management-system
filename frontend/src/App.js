@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import StudentForm from './components/StudentForm';
 import StudentList from './components/StudentList';
@@ -15,9 +15,9 @@ import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import './App.css';
+import ManualAttendance from './components/ManualAttendance';
 
-// Temporary placeholder components
-const ManualAttendance = () => <div className="coming-soon"><h2>Manual Attendance</h2></div>;
+// Temporary placeholder components for other routes
 const StudentReports = () => <div className="coming-soon"><h2>Student Reports</h2></div>;
 const OverdueFees = () => <div className="coming-soon"><h2>Overdue Fees</h2></div>;
 const FeeStructure = () => <div className="coming-soon"><h2>Fee Structure</h2></div>;
@@ -80,7 +80,7 @@ const ProtectedLayout = () => {
           
           {/* Admin Only Routes */}
           <Route path="manual-attendance" element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER']}>
               <ManualAttendance />
             </ProtectedRoute>
           } />
