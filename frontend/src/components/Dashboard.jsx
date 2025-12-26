@@ -573,7 +573,7 @@ const Dashboard = () => {
                     <div className="action-arrow">→</div>
                   </Link>
 
-                  <Link to="/attendance/manual" className="action-btn accent">
+                  <Link to="/manual-attendance" className="action-btn accent">
                     <div className="action-icon">✏️</div>
                     <div className="action-text">
                       <span>Manual Attendance</span>
