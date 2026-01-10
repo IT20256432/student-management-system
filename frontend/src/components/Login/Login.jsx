@@ -9,6 +9,7 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [isMobileKeyboardOpen, setIsMobileKeyboardOpen] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -291,7 +292,7 @@ const Login = () => {
               <p className="form-subtitle">Enter your credentials to access the system</p>
             </div>
 
-            <form className="login-form" onSubmit={handleSubmit} onKeyPress={handleKeyPress}>
+            <form className="login-form" onSubmit={handleSubmit} onKeyDown={handleKeyPress}>
               <div className="form-fields">
                 {/* Username Field */}
                 <div className="form-field">
@@ -302,6 +303,8 @@ const Login = () => {
                   <div className="input-container">
                     <input
                       id="username"
+                      onFocus={() => setIsMobileKeyboardOpen(true)}
+                      onBlur={() => setIsMobileKeyboardOpen(false)}
                       type="text"
                       value={credentials.username}
                       onChange={handleInputChange}
