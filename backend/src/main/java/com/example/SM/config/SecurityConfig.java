@@ -37,17 +37,23 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 // Public endpoints
-                .requestMatchers(
-                    "/api/auth/**",
-                    "/api/test/**",
-                    "/api/debug/**",
-                    "/",
-                    "/index.html",
-                    "/static/**",
-                    "/css/**",
-                    "/js/**",
-                    "/images/**"
-                ).permitAll()
+            		.requestMatchers(
+            		        "/api/auth/**",
+            		        "/api/test/**",
+            		        "/api/debug/**",
+            		        "/api/students/register",  
+            		        "/api/students/register-direct", 
+            		        "/api/students/register-simple",
+            		        "/api/classes/by-grade",         
+                            "/api/classes/grade/**",         
+                            "/api/classes/grade-test/**",     
+            		        "/",
+            		        "/index.html",
+            		        "/static/**",
+            		        "/css/**",
+            		        "/js/**",
+            		        "/images/**"
+            		    ).permitAll()
                 
                 // Dashboard endpoints require authentication
                 .requestMatchers("/api/dashboard/**").authenticated()

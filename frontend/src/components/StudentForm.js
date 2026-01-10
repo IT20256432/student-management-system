@@ -420,7 +420,7 @@ const handleSubmit = async (e) => {
     console.log('📋 School Class ID:', formData.schoolClass?.id);
 
     // ✅ USE THE SIMPLE ENDPOINT
-    const response = await fetch('https://management.sammanaedu.com/api/students/register-simple', {
+    const response = await fetch('http://localhost:8080/api/students/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(submissionData)
@@ -450,6 +450,19 @@ const handleSubmit = async (e) => {
   } finally {
     setIsSubmitting(false);
   }
+};
+
+const handlePrint = () => {
+  // Set print date attribute
+  const idCard = document.querySelector('.id-card');
+  if (idCard) {
+    idCard.setAttribute('data-print-date', new Date().toLocaleDateString());
+  }
+  
+  // Add a delay to ensure styles are applied
+  setTimeout(() => {
+    window.print();
+  }, 100);
 };
 
   const resetForm = () => {
@@ -937,8 +950,8 @@ const handleSubmit = async (e) => {
                   </div>
                   
                   <div className="action-buttons">
-                    <button onClick={() => window.print()} className="print-btn">
-                      🖨️ Print ID Card
+                    <button onClick={handlePrint} className="print-btn">
+                    🖨️ Print ID Card
                     </button>
                     <button onClick={resetForm} className="new-registration-btn">
                       👨‍🎓 Register Another Student

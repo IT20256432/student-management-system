@@ -1020,3 +1020,1220 @@
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Add these styles to FeePaymentScanner.css */
+
+/* Month Navigation */
+.month-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.month-nav-btn {
+    padding: 8px 16px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.month-nav-btn:hover:not(:disabled) {
+    background: #2980b9;
+}
+
+.month-nav-btn.current {
+    background: #27ae60;
+}
+
+.month-nav-btn.current:hover:not(:disabled) {
+    background: #219a52;
+}
+
+.month-nav-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* Month Note */
+.month-note {
+    color: #7f8c8d;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* Fee Status Header */
+.fee-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+/* Payment History Card */
+.payment-history-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 1.5rem;
+    grid-column: 1 / -1;
+}
+
+.payment-months {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.payment-month-item {
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.payment-month-item:hover {
+    border-color: #3498db;
+    background: #f8fafc;
+}
+
+.payment-month-item.active {
+    border-color: #27ae60;
+    background: #f1f8e9;
+    border-width: 2px;
+}
+
+.month-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.month-header strong {
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.month-status {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.month-status.paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.month-status.partial {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.month-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.month-total {
+    font-weight: 600;
+    color: #27ae60;
+}
+
+.current-indicator {
+    margin-top: 5px;
+    font-size: 11px;
+    color: #27ae60;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Update payment suggestions to be responsive */
+@media (max-width: 768px) {
+    .payment-suggestions {
+        flex-direction: column;
+    }
+    
+    .suggestion-btn {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    
+    .month-navigation {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .month-nav-btn {
+        width: 100%;
+    }
+    
+    .payment-months {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Class selection grid */
+.class-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.class-option {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: white;
+}
+
+.class-option:hover {
+    border-color: #3498db;
+    background: #f8fafc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+}
+
+.class-option .class-info h4 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+}
+
+.class-option .class-info p {
+    margin: 5px 0;
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.class-actions {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.select-class-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+.select-class-btn:hover {
+    background: #2980b9;
+}
+
+/* ============================================
+   TERMINAL PRINTER MODAL STYLES
+   ============================================ */
+
+/* Print Options Modal */
+.print-options-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    animation: fadeIn 0.3s ease;
+}
+
+.print-options-modal .modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    animation: slideUp 0.4s ease;
+}
+
+.print-options-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.print-options-modal .modal-header h5 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.print-options-modal .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #7f8c8d;
+    padding: 5px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.print-options-modal .close-btn:hover {
+    background: #f8f9fa;
+    color: #2c3e50;
+}
+
+.print-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.print-option-btn {
+    padding: 15px;
+    border: 2px solid #3498db;
+    background: white;
+    color: #3498db;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+    overflow: hidden;
+}
+
+.print-option-btn:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+}
+
+.print-option-btn:hover:not(:disabled):before {
+    left: 100%;
+}
+
+.print-option-btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.print-option-btn.regular {
+    border-color: #3498db;
+    color: #3498db;
+    background: linear-gradient(135deg, #ffffff, #ebf5fb);
+}
+
+.print-option-btn.regular:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+}
+
+.print-option-btn.terminal {
+    border-color: #e74c3c;
+    color: #e74c3c;
+    background: linear-gradient(135deg, #ffffff, #fdedec);
+}
+
+.print-option-btn.terminal:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+}
+
+.print-option-btn.direct {
+    border-color: #27ae60;
+    color: #27ae60;
+    background: linear-gradient(135deg, #ffffff, #e9f7ef);
+}
+
+.print-option-btn.direct:hover:not(:disabled) {
+    background: linear-gradient(135deg, #27ae60, #219653);
+    color: white;
+    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3);
+}
+
+.print-option-btn small {
+    font-size: 12px;
+    font-weight: normal;
+    margin-top: 5px;
+    color: inherit;
+    opacity: 0.8;
+    line-height: 1.4;
+}
+
+.print-option-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.print-option-btn:disabled:before {
+    display: none;
+}
+
+/* Printer Configuration Modal */
+.printer-config-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002;
+    animation: fadeIn 0.3s ease;
+}
+
+.printer-config-modal .modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.4s ease;
+}
+
+.printer-config-modal .modal-header {
+    padding: 25px 30px;
+    border-bottom: 1px solid #eaeaea;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    border-radius: 16px 16px 0 0;
+    color: white;
+}
+
+.printer-config-modal .modal-header h5 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.printer-config-modal .close-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: all 0.2s ease;
+}
+
+.printer-config-modal .close-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: rotate(90deg);
+}
+
+.printer-options {
+    padding: 30px;
+}
+
+/* Printer Type Selection */
+.printer-type-section {
+    margin-bottom: 30px;
+}
+
+.printer-type-section h6 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.printer-type-section h6:before {
+    content: '🖨️';
+    font-size: 1.2rem;
+}
+
+.printer-type-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.printer-type-option {
+    position: relative;
+    cursor: pointer;
+}
+
+.printer-type-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.printer-type-card {
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    background: white;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.printer-type-card:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.printer-type-card.regular:before {
+    background: #3498db;
+}
+
+.printer-type-card.thermal:before {
+    background: #e74c3c;
+}
+
+.printer-type-card.dot-matrix:before {
+    background: #27ae60;
+}
+
+.printer-type-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-color: transparent;
+}
+
+.printer-type-option input[type="radio"]:checked + .printer-type-card {
+    border-color: transparent;
+    background: #f8f9fa;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+}
+
+.printer-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 10px;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+}
+
+.printer-info {
+    flex: 1;
+}
+
+.printer-info h5 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.printer-info p {
+    margin: 0 0 5px 0;
+    color: #5d6d7e;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.printer-info small {
+    color: #7f8c8d;
+    font-size: 0.8rem;
+    display: block;
+    margin-top: 5px;
+}
+
+/* Print Options */
+.print-options-section {
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.print-options-section h6 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.print-options-section h6:before {
+    content: '⚙️';
+    font-size: 1.1rem;
+}
+
+.options-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.option-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa, #f1f3f5);
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.option-checkbox:hover {
+    background: linear-gradient(135deg, #f1f3f5, #e9ecef);
+    border-color: #dee2e6;
+    transform: translateY(-2px);
+}
+
+.option-checkbox input[type="checkbox"] {
+    margin-top: 3px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #3498db;
+    transition: all 0.2s ease;
+}
+
+.option-checkbox input[type="checkbox"]:checked {
+    transform: scale(1.1);
+}
+
+.option-checkbox span {
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    flex: 1;
+}
+
+.option-checkbox small {
+    display: block;
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-top: 3px;
+    line-height: 1.4;
+}
+
+/* Preview Section */
+.preview-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.preview-section h6 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.preview-section h6:before {
+    content: '👁️';
+    font-size: 1.1rem;
+}
+
+.preview-btn {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.2);
+}
+
+.preview-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(44, 62, 80, 0.3);
+}
+
+.preview-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.preview-section small {
+    display: block;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+/* Print Actions */
+.print-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid #eaeaea;
+}
+
+.print-action-btn {
+    flex: 1;
+    padding: 16px 24px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.print-action-btn:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.print-action-btn:hover:not(:disabled):before {
+    width: 300px;
+    height: 300px;
+}
+
+.print-action-btn.primary {
+    background: linear-gradient(135deg, #27ae60, #219653);
+    color: white;
+}
+
+.print-action-btn.primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #219653, #1e874b);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3);
+}
+
+.print-action-btn.secondary {
+    background: white;
+    color: #5d6d7e;
+    border: 2px solid #dee2e6;
+}
+
+.print-action-btn.secondary:hover:not(:disabled) {
+    background: #f8f9fa;
+    color: #2c3e50;
+    border-color: #bdc3c7;
+    transform: translateY(-3px);
+}
+
+.print-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Printer Status */
+.printer-status {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px;
+    margin-top: 20px;
+    animation: fadeInUp 0.5s ease;
+}
+
+.status-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    position: relative;
+}
+
+.status-indicator.processing {
+    background: #f1c40f;
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+}
+
+.printer-status p {
+    margin: 0;
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 0.95rem;
+    flex: 1;
+}
+
+/* Fee Breakdown in Receipt Summary */
+.fee-breakdown-enhanced {
+    background: linear-gradient(135deg, #f8f9fa, #f1f3f5);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.fee-breakdown-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3498db;
+}
+
+.fee-breakdown-header h6 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.fee-breakdown-header:before {
+    content: '💰';
+    font-size: 1.2rem;
+}
+
+.fee-detail-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.fee-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed #dee2e6;
+}
+
+.fee-detail-item:last-child {
+    border-bottom: none;
+}
+
+.fee-detail-item .fee-label {
+    color: #5d6d7e;
+    font-size: 0.9rem;
+}
+
+.fee-detail-item .fee-value {
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.total-fee-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    margin-top: 10px;
+    border-top: 2px solid #3498db;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.total-fee-item .total-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.total-fee-item .total-label:before {
+    content: '✅';
+    font-size: 0.9rem;
+}
+
+.total-fee-item .total-value {
+    color: #27ae60;
+    font-size: 1.1rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .printer-type-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .print-actions {
+        flex-direction: column;
+    }
+    
+    .print-action-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .printer-type-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .printer-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.5rem;
+    }
+    
+    .option-checkbox {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+
+/* Print Instructions */
+.print-instructions {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #3498db;
+}
+
+.instruction-note {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.print-tips {
+    margin-top: 20px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f5f7fa, #f0f2f5);
+    border-radius: 8px;
+    border-left: 3px solid #9b59b6;
+}
+
+.print-tips h6 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.print-tips h6:before {
+    content: '💡';
+    font-size: 1rem;
+}
+
+.print-tips ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.85rem;
+    color: #5d6d7e;
+}
+
+.print-tips li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.print-tips li:before {
+    content: '→';
+    color: #9b59b6;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+/* Enhanced Loading States */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1003;
+    animation: fadeIn 0.3s ease;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+.loading-text {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 500;
+    animation: pulse 1.5s infinite;
+}
+
+/* Update print button style */
+.action-btn.print {
+    position: relative;
+}
+
+/* Ensure modal appears above everything */
+.receipt-options-section {
+    position: relative;
+}
+
+/* Fee breakdown in receipt summary */
+.fee-breakdown-header {
+    grid-column: 1 / -1;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.fee-detail {
+    padding-left: 20px;
+    font-size: 13px;
+    color: #555;
+}
+
+.fee-detail span:first-child {
+    font-weight: normal;
+}
+
+.total-fee {
+    grid-column: 1 / -1;
+    border-top: 2px solid #3498db;
+    margin-top: 5px;
+    padding-top: 10px;
+    font-size: 14px;
+}
+
+/* Success/Error States */
+.success-state {
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(46, 204, 113, 0.1));
+    border: 1px solid rgba(39, 174, 96, 0.2);
+    color: #27ae60;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    animation: slideInRight 0.3s ease;
+}
+
+.error-state {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.1));
+    border: 1px solid rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Print Queue Status */
+.print-queue-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.print-queue-status.queued {
+    background: rgba(241, 196, 15, 0.1);
+    color: #f1c40f;
+    border: 1px solid rgba(241, 196, 15, 0.2);
+}
+
+.print-queue-status.printing {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.print-queue-status.completed {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+.print-queue-status.failed {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.2);
+}

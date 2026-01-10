@@ -724,3 +724,324 @@
 .form-group:has(#relationship) label::after {
   display: none !important;
 }
+
+/* Print Preview Modal */
+.print-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.print-preview-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  position: relative;
+}
+
+.print-preview-content .id-card {
+  margin: 0 auto;
+}
+
+.print-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.close-preview {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+/* ============================================
+   PRINT STYLES FOR ID CARD
+   ============================================ */
+
+@media print {
+  /* Hide everything except the ID card */
+  body * {
+    visibility: hidden;
+  }
+  
+  .qr-section,
+  .qr-section * {
+    visibility: visible !important;
+  }
+  
+  .qr-section {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  /* Reset the gradient background for printing */
+  .app-container {
+    background: white !important;
+    min-height: auto !important;
+    padding: 0 !important;
+  }
+  
+  .main-content {
+    padding: 0 !important;
+    min-height: auto !important;
+    display: block !important;
+  }
+  
+  .form-wrapper {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* ID Card specific print styles */
+  .id-card {
+    background: white !important;
+    color: black !important;
+    border: 2px solid #333 !important;
+    border-radius: 15px !important;
+    padding: 25px !important;
+    display: grid !important;
+    grid-template-columns: 250px 1fr !important;
+    gap: 30px !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  /* QR Code print styling */
+  .qr-code-container {
+    border-right: 2px solid #ddd !important;
+    padding-right: 20px !important;
+  }
+  
+  .qr-code {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    padding: 15px !important;
+  }
+  
+  .qr-note {
+    color: black !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+    margin-top: 10px !important;
+  }
+  
+  /* Student info styling */
+  .student-info {
+    color: black !important;
+  }
+  
+  .student-info h4 {
+    color: #4f46e5 !important;
+    border-bottom: 2px solid #4f46e5 !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  
+  .info-item {
+    padding: 8px 0 !important;
+    border-bottom: 1px dotted #ddd !important;
+  }
+  
+  .info-item strong {
+    color: #666 !important;
+    font-size: 12px !important;
+  }
+  
+  .info-item span {
+    color: black !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Hide action buttons */
+  .action-buttons,
+  .form-header,
+  .form-navigation,
+  .progress-steps,
+  .success-header,
+  .submit-btn,
+  .nav-btn {
+    display: none !important;
+  }
+  
+  /* Add print-only elements */
+  .id-card::after {
+    content: "Printed on " attr(data-print-date);
+    display: block;
+    text-align: center;
+    font-size: 10px;
+    color: #999;
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+  }
+  
+  /* Ensure QR code prints clearly */
+  svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* ID Card specific enhancements for both screen and print */
+.id-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+/* Add a subtle pattern to the ID card */
+.id-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  z-index: 1;
+}
+
+/* School logo/header area */
+.id-card-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.school-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.school-motto {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 4px;
+}
+
+/* Photo placeholder (if you add student photos later) */
+.student-photo {
+  width: 120px;
+  height: 140px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+}
+
+.student-photo-placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Student ID Badge */
+.student-id-badge {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  margin-top: 15px;
+}
+
+.student-id-badge span {
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+}
+
+/* Additional info styling */
+.additional-info {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 15px;
+  font-size: 12px;
+}
+
+/* Print button styling enhancement */
+.print-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.print-btn::before {
+  content: "🖨️";
+  margin-right: 8px;
+}
+
+/* Add a print preview modal style */
+.print-preview {
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+/* Enhanced info grid for better readability */
+.info-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.info-item:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+

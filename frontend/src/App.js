@@ -16,6 +16,8 @@ import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import './App.css';
 import ManualAttendance from './components/ManualAttendance';
+import ManualFeePayment from './components/ManualFeePayment';
+
 
 // Temporary placeholder components for other routes
 const StudentReports = () => <div className="coming-soon"><h2>Student Reports</h2></div>;
@@ -77,6 +79,7 @@ const ProtectedLayout = () => {
           <Route path="fee-payment" element={<FeePaymentScanner />} />
           <Route path="fee-management" element={<FeeManagement />} />
           <Route path="payment-tracker" element={<PaymentTracker />} />
+          <Route path="manual-fee-payment" element={<ManualFeePayment />} />
           
           {/* Admin Only Routes */}
           <Route path="manual-attendance" element={

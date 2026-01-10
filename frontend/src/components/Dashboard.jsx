@@ -414,7 +414,7 @@ const Dashboard = () => {
       {/* Enhanced Header Section */}
       <div className="dashboard-header">
         <div className="header-content">
-          <div className="welcome-section">
+          <div className="welcomeD-section">
             <h1>School Management Dashboard</h1>
             <p>Comprehensive overview of student management, attendance, and financial tracking</p>
           </div>
@@ -624,11 +624,11 @@ const Dashboard = () => {
                     <div className="action-arrow">→</div>
                   </Link>
 
-                  <Link to="/fee-structure" className="action-btn success">
+                  <Link to="/manual-fee-payment" className="action-btn success">
                     <div className="action-icon">🏷️</div>
                     <div className="action-text">
-                      <span>Fee Structure</span>
-                      <small>Manage class fees</small>
+                      <span>Manual Fee Collector</span>
+                      <small>Manual Fee Payment</small>
                     </div>
                     <div className="action-arrow">→</div>
                   </Link>
@@ -699,7 +699,7 @@ const Dashboard = () => {
                     <div className="action-arrow">→</div>
                   </Link>
 
-                  <Link to="/reports/financial" className="action-btn danger">
+                  <Link to="/fee-management" className="action-btn danger">
                     <div className="action-icon">💰</div>
                     <div className="action-text">
                       <span>Financial Reports</span>

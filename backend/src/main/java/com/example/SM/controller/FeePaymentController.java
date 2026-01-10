@@ -19,8 +19,10 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import java.util.Base64;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -306,6 +308,52 @@ public class FeePaymentController {
                     HttpStatus.INTERNAL_SERVER_ERROR, 
                     "Failed to generate PDF: " + e.getMessage()
                 );
+            }
+        }
+        
+     // Add these endpoints to FeePaymentController.java
+        @GetMapping("/by-date")
+        public ResponseEntity<List<FeePaymentResponse>> getPaymentsByDate(
+                @RequestParam(required = false) String date) {
+            try {
+                LocalDate targetDate = date != null ? 
+                    LocalDate.parse(date) : LocalDate.now();
+                
+                List<FeePaymentResponse> payments = feePaymentService.getPaymentsByDate(targetDate);
+                return ResponseEntity.ok(payments);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(new ArrayList<>());
+            }
+        }
+
+        @GetMapping("/by-date-range")
+        public ResponseEntity<List<FeePaymentResponse>> getPaymentsByDateRange(
+                @RequestParam(required = false) String startDate,
+                @RequestParam(required = false) String endDate) {
+            try {
+                LocalDate start = startDate != null ? 
+                    LocalDate.parse(startDate) : LocalDate.now().minusDays(7);
+                LocalDate end = endDate != null ? 
+                    LocalDate.parse(endDate) : LocalDate.now();
+                
+                List<FeePaymentResponse> payments = feePaymentService.getPaymentsByDateRange(start, end);
+                return ResponseEntity.ok(payments);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(new ArrayList<>());
+            }
+        }
+
+        @GetMapping("/daily-summary")
+        public ResponseEntity<Map<String, Object>> getDailySummary(
+                @RequestParam(required = false) String date) {
+            try {
+                LocalDate targetDate = date != null ? 
+                    LocalDate.parse(date) : LocalDate.now();
+                
+                Map<String, Object> summary = feePaymentService.getDailySummary(targetDate);
+                return ResponseEntity.ok(summary);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(new HashMap<>());
             }
         }
     

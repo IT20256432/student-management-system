@@ -99,7 +99,7 @@ const Header = () => {
       const token = localStorage.getItem('token');
       
       if (token) {
-        await fetch('https://management.sammanaedu.com/api/auth/logout', {
+        await fetch('http://localhost:8080/api/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

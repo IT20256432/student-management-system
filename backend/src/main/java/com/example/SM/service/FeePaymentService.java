@@ -369,6 +369,75 @@ public class FeePaymentService {
                 throw new MessagingException("Failed to send confirmation email: " + e.getMessage());
             }
         }
+        
+     // Add to FeePaymentService.java
+        public List<FeePaymentResponse> getPaymentsByDateRange(LocalDate startDate, LocalDate endDate) {
+            try {
+                System.out.println("📅 Getting payments from " + startDate + " to " + endDate);
+                
+                List<FeePayment> payments = feePaymentRepository.findPaymentsBetweenDates(startDate, endDate);
+                
+                return payments.stream()
+                    .map(FeePaymentResponse::new)
+                    .collect(Collectors.toList());
+            } catch (Exception e) {
+                System.err.println("Error getting payments by date range: " + e.getMessage());
+                return new ArrayList<>();
+            }
+        }
+
+        public List<FeePaymentResponse> getPaymentsByDate(LocalDate date) {
+            return getPaymentsByDateRange(date, date);
+        }
+
+        public Map<String, Object> getDailySummary(LocalDate date) {
+            try {
+                List<FeePayment> payments = feePaymentRepository.findPaymentsBetweenDates(date, date);
+                
+                BigDecimal totalCash = BigDecimal.ZERO;
+                BigDecimal totalCard = BigDecimal.ZERO;
+                BigDecimal totalOnline = BigDecimal.ZERO;
+                int paymentCount = payments.size();
+                
+                for (FeePayment payment : payments) {
+                    switch (payment.getPaymentMethod()) {
+                        case CASH:
+                            totalCash = totalCash.add(payment.getAmountPaid());
+                            break;
+                        case CARD:
+                            totalCard = totalCard.add(payment.getAmountPaid());
+                            break;
+                        case ONLINE:
+                            totalOnline = totalOnline.add(payment.getAmountPaid());
+                            break;
+                    }
+                }
+                
+                BigDecimal totalAmount = totalCash.add(totalCard).add(totalOnline);
+                
+                Map<String, Object> summary = new HashMap<>();
+                summary.put("date", date.toString());
+                summary.put("paymentCount", paymentCount);
+                summary.put("totalCash", totalCash);
+                summary.put("totalCard", totalCard);
+                summary.put("totalOnline", totalOnline);
+                summary.put("totalAmount", totalAmount);
+                
+                // Group by class
+                Map<String, BigDecimal> classTotals = payments.stream()
+                    .collect(Collectors.groupingBy(
+                        p -> p.getSchoolClass() != null ? p.getSchoolClass().getClassName() : "Unknown",
+                        Collectors.reducing(BigDecimal.ZERO, FeePayment::getAmountPaid, BigDecimal::add)
+                    ));
+                
+                summary.put("classTotals", classTotals);
+                
+                return summary;
+            } catch (Exception e) {
+                System.err.println("Error getting daily summary: " + e.getMessage());
+                return new HashMap<>();
+            }
+        }
 
         private String generatePaymentConfirmationEmail(Student student, SchoolClass schoolClass, FeePayment payment) {
             String studentName = student.getFirstName() + " " + student.getLastName();

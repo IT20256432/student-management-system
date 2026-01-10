@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { studentAPI, feePaymentAPI, feeAPI, classAPI } from '../services/api';
+import { printReceipt as utilsPrintReceipt } from '../utils/receiptPrintingUtils';
+
 import './FeePaymentScanner.css';
 
 const FeePaymentScanner = () => {
+    // State declarations
     const [scannedStudent, setScannedStudent] = useState(null);
     const [feeStatus, setFeeStatus] = useState(null);
     const [classFeeStructure, setClassFeeStructure] = useState(null);
@@ -25,13 +28,129 @@ const FeePaymentScanner = () => {
     const [lastPaymentId, setLastPaymentId] = useState(null);
     const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
     const [receiptData, setReceiptData] = useState(null);
+    
+    // NEW STATES FOR MONTH FUNCTIONALITY
+    const [existingPayments, setExistingPayments] = useState([]);
+    const [isLoadingFeeStructure, setIsLoadingFeeStructure] = useState(false);
+
+    // NEW STATES FOR TERMINAL PRINTER SUPPORT
+    const [showPrintOptions, setShowPrintOptions] = useState(false);
+    const [isPrinting, setIsPrinting] = useState(false);
+    const [printerType, setPrinterType] = useState('REGULAR'); // REGULAR, TERMINAL, USB
 
     const html5QrCodeRef = useRef(null);
     const readerId = "fee-qr-reader";
 
+    // Helper functions for month navigation
+    const getCurrentMonth = () => {
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    const isFutureMonth = (monthString) => {
+        const [year, month] = monthString.split('-').map(Number);
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        
+        return year > currentYear || (year === currentYear && month > currentMonth);
+    };
+
     useEffect(() => {
         return () => stopScanner();
     }, []);
+
+    // Refresh fee status when month changes
+    useEffect(() => {
+        const refreshFeeStatusForMonth = async () => {
+            if (!scannedStudent || !selectedPaymentClass || !paymentForm.month) return;
+            
+            console.log(`🔄 Month changed to ${paymentForm.month}, refreshing fee status...`);
+            
+            try {
+                setIsLoadingFeeStructure(true);
+                
+                // Get ALL payments for this class
+                let allPayments = [];
+                try {
+                    allPayments = await feePaymentAPI.getStudentPaymentsForClass(
+                        scannedStudent.studentId,
+                        selectedPaymentClass.id
+                    );
+                    console.log(`📋 Found ${allPayments.length} total payments for class`);
+                } catch (paymentsError) {
+                    console.error('Error loading payments:', paymentsError);
+                    allPayments = [];
+                }
+                
+                // Filter payments for the SPECIFIC month
+                const monthPayments = allPayments.filter(payment => {
+                    const paymentMonth = payment.month ? 
+                        payment.month.split('-').slice(0, 2).join('-') : 
+                        null;
+                    return paymentMonth === paymentForm.month;
+                });
+                
+                console.log(`📊 Found ${monthPayments.length} payments for ${paymentForm.month}`);
+                
+                const totalDue = classFeeStructure?.totalFee || 8000;
+                const totalPaidForMonth = monthPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+                const balanceForMonth = totalDue - totalPaidForMonth;
+                
+                // Determine status
+                let overallStatus;
+                if (balanceForMonth <= 0) {
+                    overallStatus = 'PAID';
+                } else if (totalPaidForMonth > 0) {
+                    overallStatus = 'PARTIAL';
+                } else {
+                    overallStatus = 'PENDING';
+                }
+                
+                const refreshedStatus = {
+                    studentId: scannedStudent.studentId,
+                    studentName: `${scannedStudent.firstName} ${scannedStudent.lastName}`,
+                    className: selectedPaymentClass.className,
+                    classId: selectedPaymentClass.id,
+                    month: paymentForm.month,
+                    totalDue: totalDue,
+                    totalPaid: totalPaidForMonth,
+                    balance: balanceForMonth,
+                    overallStatus: overallStatus,
+                    isManuallyCalculated: true,
+                    totalPaymentsCount: allPayments.length,
+                    monthPaymentsCount: monthPayments.length
+                };
+                
+                setFeeStatus(refreshedStatus);
+                console.log('✅ Calculated fee status:', {
+                    month: refreshedStatus.month,
+                    totalDue: refreshedStatus.totalDue,
+                    totalPaid: refreshedStatus.totalPaid,
+                    balance: refreshedStatus.balance,
+                    status: refreshedStatus.overallStatus,
+                    paymentsThisMonth: monthPayments.length
+                });
+                
+                // Update payment amount suggestion
+                const suggestedAmount = balanceForMonth > 0 ? balanceForMonth : totalDue;
+                setPaymentForm(prev => ({
+                    ...prev,
+                    amount: suggestedAmount.toString()
+                }));
+                
+            } catch (error) {
+                console.error('Error refreshing fee status for month:', error);
+                setError('Failed to refresh fee status: ' + error.message);
+            } finally {
+                setIsLoadingFeeStructure(false);
+            }
+        };
+        
+        if (scannedStudent && selectedPaymentClass && paymentForm.month) {
+            refreshFeeStatusForMonth();
+        }
+    }, [paymentForm.month, scannedStudent, selectedPaymentClass]);
 
     const startScanner = async () => {
         try {
@@ -96,8 +215,10 @@ const FeePaymentScanner = () => {
         setAvailableClasses([]);
         setShowClassSelection(false);
         setShowReceiptOptions(false);
+        setShowPrintOptions(false);
         setLastPaymentId(null);
         setReceiptData(null);
+        setExistingPayments([]);
         setPaymentForm({
             amount: '',
             paymentMethod: 'CASH',
@@ -165,7 +286,7 @@ const FeePaymentScanner = () => {
           
           // Method 1: Use query parameter (the one that works)
           const response = await fetch(
-            `https://management.sammanaedu.com/api/classes/by-grade?grade=${encodeURIComponent(student.grade)}`,
+            `http://localhost:8080/api/classes/by-grade?grade=${encodeURIComponent(student.grade)}`,
             {
               method: 'GET',
               headers: {
@@ -238,6 +359,7 @@ const FeePaymentScanner = () => {
             console.log(`🎯 Selected class for payment: ${classObj.className}`);
             setSelectedPaymentClass(classObj);
             setShowClassSelection(false);
+            setIsLoadingFeeStructure(true);
 
             // Get fee structure for selected class
             let feeStructure = await feeAPI.getByClass(classObj.id);
@@ -247,30 +369,65 @@ const FeePaymentScanner = () => {
                 feeStructure._isFallback = true;
             }
 
-            // Get fee status for this class
-            let status;
-            try {
-                status = await feePaymentAPI.getFeeStatusForClass(student.studentId, classObj.id);
-            } catch (statusError) {
-                console.log('⚠️ Using fallback fee status');
-                status = {
-                    studentId: student.studentId,
-                    studentName: `${student.firstName} ${student.lastName}`,
-                    className: classObj.className,
-                    totalDue: feeStructure.totalFee,
-                    totalPaid: 0,
-                    balance: feeStructure.totalFee,
-                    overallStatus: 'PENDING',
-                    classId: classObj.id
-                };
-            }
-
-            setScannedStudent(student);
-            setFeeStatus(status);
             setClassFeeStructure(feeStructure);
+            
+            // Load ALL payments for this class
+            let allPayments = [];
+            try {
+                allPayments = await feePaymentAPI.getStudentPaymentsForClass(
+                    student.studentId, 
+                    classObj.id
+                );
+                console.log(`📋 Found ${allPayments.length} total payments for class`);
+            } catch (paymentsError) {
+                console.error('Error loading payments:', paymentsError);
+                allPayments = [];
+            }
+            
+            setExistingPayments(allPayments);
+            
+            // Filter payments for the current month
+            const currentMonthPayments = allPayments.filter(payment => {
+                const paymentMonth = payment.month ? 
+                    payment.month.split('-').slice(0, 2).join('-') : 
+                    null;
+                return paymentMonth === paymentForm.month;
+            });
+            
+            console.log(`📊 Payments for ${paymentForm.month}:`, currentMonthPayments.length);
+            
+            // Calculate month-specific fee status
+            const totalDue = feeStructure.totalFee || 8000;
+            const totalPaidForMonth = currentMonthPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+            const balanceForMonth = totalDue - totalPaidForMonth;
+            
+            const feeStatus = {
+                studentId: student.studentId,
+                studentName: `${student.firstName} ${student.lastName}`,
+                className: classObj.className,
+                classId: classObj.id,
+                month: paymentForm.month,
+                totalDue: totalDue,
+                totalPaid: totalPaidForMonth,
+                balance: balanceForMonth,
+                overallStatus: balanceForMonth <= 0 ? 'PAID' : totalPaidForMonth > 0 ? 'PARTIAL' : 'PENDING',
+                isManuallyCalculated: true,
+                totalPaymentsCount: allPayments.length,
+                monthPaymentsCount: currentMonthPayments.length
+            };
+            
+            setFeeStatus(feeStatus);
+            console.log(`✅ Month ${paymentForm.month} status:`, {
+                totalDue: feeStatus.totalDue,
+                totalPaid: feeStatus.totalPaid,
+                balance: feeStatus.balance,
+                status: feeStatus.overallStatus
+            });
+            
+            setScannedStudent(student);
 
             // Auto-fill payment amount
-            const suggestedAmount = status.balance > 0 ? status.balance : feeStructure.totalFee;
+            const suggestedAmount = balanceForMonth > 0 ? balanceForMonth : totalDue;
             setPaymentForm(prev => ({
                 ...prev,
                 amount: suggestedAmount.toString()
@@ -279,81 +436,121 @@ const FeePaymentScanner = () => {
         } catch (error) {
             console.error('❌ Error selecting class:', error);
             setError(`Failed to load class data: ${error.message}`);
+        } finally {
+            setIsLoadingFeeStructure(false);
         }
     };
 
     // HANDLE PAYMENT FOR SELECTED CLASS
     const handlePayment = async () => {
-        if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) {
-            setError("Please enter a valid payment amount");
-            return;
-        }
+    if (!paymentForm.amount || parseFloat(paymentForm.amount) <= 0) {
+        setError("Please enter a valid payment amount");
+        return;
+    }
 
-        if (!selectedPaymentClass) {
-            setError("Please select a class for payment");
-            return;
-        }
+    if (!selectedPaymentClass) {
+        setError("Please select a class for payment");
+        return;
+    }
 
-        setIsProcessing(true);
-        setError(null);
+    setIsProcessing(true);
+    setError(null);
 
+    try {
+        const paymentData = {
+            studentId: scannedStudent.studentId,
+            classId: selectedPaymentClass.id,
+            amountPaid: parseFloat(paymentForm.amount),
+            paymentDate: new Date().toISOString().split('T')[0],
+            month: paymentForm.month,
+            paymentMethod: paymentForm.paymentMethod,
+            transactionId: `TXN${Date.now()}`,
+            notes: paymentForm.notes,
+            feeBreakdown: classFeeStructure // Add fee breakdown to payment data
+        };
+
+        console.log("💳 Recording payment with email...");
+        
+        const result = await feePaymentAPI.recordPaymentWithEmail(paymentData);
+        console.log("✅ Payment recorded with email:", result);
+        
+        // Save payment ID and receipt data WITH FEE BREAKDOWN
+        setLastPaymentId(result.id || result.paymentId);
+        setReceiptData({
+            studentName: scannedStudent.firstName + " " + scannedStudent.lastName,
+            studentId: scannedStudent.studentId,
+            className: selectedPaymentClass.className,
+            amount: paymentForm.amount,
+            month: paymentForm.month,
+            date: new Date().toISOString().split('T')[0],
+            transactionId: paymentData.transactionId,
+            studentEmail: scannedStudent.email,
+            paymentMethod: paymentForm.paymentMethod,
+            // Add fee breakdown to receipt data
+            feeBreakdown: {
+                monthlyFee: classFeeStructure.monthlyFee || 0,
+                admissionFee: classFeeStructure.admissionFee || 0,
+                examFee: classFeeStructure.examFee || 0,
+                sportsFee: classFeeStructure.sportsFee || 0,
+                libraryFee: classFeeStructure.libraryFee || 0,
+                labFee: classFeeStructure.labFee || 0,
+                otherFee: classFeeStructure.otherFee || 0,
+                totalFee: classFeeStructure.totalFee || 0
+            }
+        });
+        
+        // Show receipt download options
+        setShowReceiptOptions(true);
+
+        // Refresh ALL payments
         try {
-            const paymentData = {
-                studentId: scannedStudent.studentId,
-                classId: selectedPaymentClass.id,
-                amountPaid: parseFloat(paymentForm.amount),
-                paymentDate: new Date().toISOString().split('T')[0],
-                month: paymentForm.month,
-                paymentMethod: paymentForm.paymentMethod,
-                transactionId: `TXN${Date.now()}`,
-                notes: paymentForm.notes
-            };
-
-            console.log("💳 Recording payment with email...");
-            
-            // NEW: Use the email-enabled endpoint
-            const result = await feePaymentAPI.recordPaymentWithEmail(paymentData);
-            console.log("✅ Payment recorded with email:", result);
-            
-            // Save payment ID and receipt data
-            setLastPaymentId(result.id);
-            setReceiptData({
-                studentName: scannedStudent.firstName + " " + scannedStudent.lastName,
-                studentId: scannedStudent.studentId,
-                className: selectedPaymentClass.className,
-                amount: paymentForm.amount,
-                month: paymentForm.month,
-                date: new Date().toISOString().split('T')[0],
-                transactionId: paymentData.transactionId,
-                studentEmail: scannedStudent.email
-            });
-            
-            // Show receipt download options
-            setShowReceiptOptions(true);
-
-            // Refresh fee status
-            const updatedStatus = await feePaymentAPI.getFeeStatusForClass(
+            const allPayments = await feePaymentAPI.getStudentPaymentsForClass(
                 scannedStudent.studentId, 
                 selectedPaymentClass.id
             );
+            setExistingPayments(allPayments);
+            
+            // Filter for current month
+            const currentMonthPayments = allPayments.filter(payment => {
+                const paymentMonth = payment.month ? 
+                    payment.month.split('-').slice(0, 2).join('-') : 
+                    null;
+                return paymentMonth === paymentForm.month;
+            });
+            
+            const totalPaidForMonth = currentMonthPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+            const totalDue = classFeeStructure.totalFee || 8000;
+            const balanceForMonth = totalDue - totalPaidForMonth;
+            
+            const updatedStatus = {
+                ...feeStatus,
+                totalPaid: totalPaidForMonth,
+                balance: balanceForMonth,
+                overallStatus: balanceForMonth <= 0 ? 'PAID' : totalPaidForMonth > 0 ? 'PARTIAL' : 'PENDING'
+            };
+            
             setFeeStatus(updatedStatus);
-
-            // Show success message with email info
-            if (scannedStudent.email) {
-                setError(`✅ Payment recorded successfully! Confirmation email sent to ${scannedStudent.email}`);
-            } else {
-                setError("✅ Payment recorded successfully! (No email sent - student email not available)");
-            }
-
-        } catch (err) {
-            console.error("❌ Payment error:", err);
-            setError(err.message || "Failed to record payment");
-        } finally {
-            setIsProcessing(false);
+            
+        } catch (statusError) {
+            console.warn('Could not refresh fee status:', statusError.message);
         }
-    };
 
-    // NEW: DOWNLOAD PDF RECEIPT
+        // Show success message with email info
+        if (scannedStudent.email) {
+            setError(`✅ Payment recorded successfully! Confirmation email sent to ${scannedStudent.email}`);
+        } else {
+            setError("✅ Payment recorded successfully! (No email sent - student email not available)");
+        }
+
+    } catch (err) {
+        console.error("❌ Payment error:", err);
+        setError(err.message || "Failed to record payment");
+    } finally {
+        setIsProcessing(false);
+    }
+};
+
+    
     const handleDownloadReceipt = async () => {
         if (!lastPaymentId) return;
         
@@ -384,98 +581,272 @@ const FeePaymentScanner = () => {
         }
     };
 
-    // NEW: PREVIEW RECEIPT IN NEW TAB
     const handlePreviewReceipt = async () => {
-        if (!lastPaymentId) return;
+    if (!lastPaymentId || !receiptData) return;
+    
+    setIsDownloadingPDF(true);
+    try {
+        // Create a preview with fee breakdown
+        const previewWindow = window.open('', '_blank');
+        if (!previewWindow) {
+            alert('Please allow pop-ups to preview receipt');
+            return;
+        }
         
-        setIsDownloadingPDF(true);
-        try {
-            const receipt = await feePaymentAPI.getReceiptBase64(lastPaymentId);
-            
-            // Open PDF in new tab
-            const pdfWindow = window.open();
-            if (pdfWindow) {
-                pdfWindow.document.write(`
-                    <html>
-                    <head>
-                        <title>Receipt Preview - ${receipt.filename}</title>
-                    </head>
-                    <body style="margin: 0; padding: 0;">
-                        <embed 
-                            src="data:application/pdf;base64,${receipt.pdfBase64}" 
-                            type="application/pdf" 
-                            width="100%" 
-                            height="100%"
-                            style="position: absolute; top: 0; left: 0;"
-                        />
-                    </body>
-                    </html>
-                `);
+        const totalAmount = parseFloat(receiptData.amount);
+        const totalFee = receiptData.feeBreakdown.totalFee;
+        
+        // Generate fee breakdown for preview
+        let feeBreakdownHTML = '';
+        const fees = [
+            { name: 'Monthly Fee', amount: receiptData.feeBreakdown.monthlyFee },
+            { name: 'Admission Fee', amount: receiptData.feeBreakdown.admissionFee },
+            { name: 'Exam Fee', amount: receiptData.feeBreakdown.examFee },
+            { name: 'Sports Fee', amount: receiptData.feeBreakdown.sportsFee },
+            { name: 'Library Fee', amount: receiptData.feeBreakdown.libraryFee },
+            { name: 'Lab Fee', amount: receiptData.feeBreakdown.labFee },
+            { name: 'Other Fees', amount: receiptData.feeBreakdown.otherFee }
+        ];
+        
+        fees.forEach(fee => {
+            if (fee.amount > 0) {
+                feeBreakdownHTML += `
+                    <tr>
+                        <td>${fee.name}</td>
+                        <td style="text-align: right;">${formatCurrency(fee.amount)}</td>
+                    </tr>
+                `;
             }
-        } catch (error) {
-            console.error("❌ Receipt preview failed:", error);
-            setError("Failed to preview receipt: " + error.message);
-        } finally {
-            setIsDownloadingPDF(false);
-        }
-    };
-
-    // NEW: PRINT RECEIPT
-    const handlePrintReceipt = async () => {
-        if (!lastPaymentId) return;
+        });
         
-        setIsDownloadingPDF(true);
-        try {
-            const receipt = await feePaymentAPI.getReceiptBase64(lastPaymentId);
-            
-            // Create iframe for printing
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
-            
-            const doc = iframe.contentWindow.document;
-            doc.open();
-            doc.write(`
-                <html>
-                <head>
-                    <title>Print Receipt</title>
-                    <style>
-                        body { margin: 0; padding: 0; }
-                        @media print {
-                            body { margin: 0; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <embed 
-                        src="data:application/pdf;base64,${receipt.pdfBase64}" 
-                        type="application/pdf" 
-                        width="100%" 
-                        height="100%"
-                    />
-                </body>
-                </html>
-            `);
-            doc.close();
-            
-            // Wait for PDF to load then print
-            iframe.onload = () => {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-                document.body.removeChild(iframe);
-            };
-            
-        } catch (error) {
-            console.error("❌ Print failed:", error);
-            setError("Failed to print receipt: " + error.message);
-        } finally {
-            setIsDownloadingPDF(false);
+        const previewHTML = `
+            <html>
+            <head>
+                <title>Receipt Preview</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        padding: 20px;
+                        max-width: 800px;
+                        margin: 0 auto;
+                    }
+                    .receipt-container {
+                        border: 1px solid #ddd;
+                        padding: 20px;
+                        border-radius: 8px;
+                        background: white;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 20px;
+                        border-bottom: 2px solid #3498db;
+                        padding-bottom: 15px;
+                    }
+                    .header h2 {
+                        color: #2c3e50;
+                        margin: 0;
+                    }
+                    .info-grid {
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 15px;
+                        margin: 20px 0;
+                    }
+                    .info-item {
+                        padding: 8px 0;
+                        border-bottom: 1px solid #eee;
+                    }
+                    .label {
+                        font-weight: bold;
+                        color: #555;
+                        display: inline-block;
+                        width: 120px;
+                    }
+                    .fee-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .fee-table th {
+                        background: #3498db;
+                        color: white;
+                        padding: 10px;
+                        text-align: left;
+                    }
+                    .fee-table td {
+                        padding: 8px 10px;
+                        border-bottom: 1px solid #eee;
+                    }
+                    .total-row {
+                        font-weight: bold;
+                        background: #f8f9fa;
+                    }
+                    .payment-summary {
+                        background: #f1f8e9;
+                        padding: 15px;
+                        border-radius: 5px;
+                        margin: 20px 0;
+                    }
+                    .payment-amount {
+                        font-size: 20px;
+                        font-weight: bold;
+                        color: #27ae60;
+                        text-align: center;
+                        margin: 15px 0;
+                        padding: 10px;
+                        background: white;
+                        border: 2px solid #27ae60;
+                        border-radius: 5px;
+                    }
+                    .footer {
+                        margin-top: 30px;
+                        padding-top: 15px;
+                        border-top: 1px solid #ddd;
+                        color: #7f8c8d;
+                        font-size: 12px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="receipt-container">
+                    <div class="header">
+                        <h2>FEE PAYMENT RECEIPT - PREVIEW</h2>
+                        <p>Transaction ID: ${receiptData.transactionId}</p>
+                    </div>
+                    
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="label">Student:</span>
+                            <span>${receiptData.studentName}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Student ID:</span>
+                            <span>${receiptData.studentId}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Class:</span>
+                            <span>${receiptData.className}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">For Month:</span>
+                            <span>${receiptData.month}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Payment Date:</span>
+                            <span>${receiptData.date}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Payment Method:</span>
+                            <span>${receiptData.paymentMethod}</span>
+                        </div>
+                    </div>
+                    
+                    <h3>Fee Breakdown</h3>
+                    <table class="fee-table">
+                        <thead>
+                            <tr>
+                                <th>Fee Type</th>
+                                <th style="text-align: right;">Amount (LKR)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${feeBreakdownHTML}
+                            <tr class="total-row">
+                                <td><strong>TOTAL FEE DUE</strong></td>
+                                <td style="text-align: right;"><strong>${formatCurrency(totalFee)}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="payment-summary">
+                        <h3>Payment Summary</h3>
+                        <div class="info-item">
+                            <span class="label">Total Fee Due:</span>
+                            <span>${formatCurrency(totalFee)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Amount Paid:</span>
+                            <span><strong>${formatCurrency(totalAmount)}</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Remaining Balance:</span>
+                            <span>${formatCurrency(totalFee - totalAmount)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-amount">
+                        AMOUNT PAID: ${formatCurrency(totalAmount)}
+                    </div>
+                    
+                    <div class="footer">
+                        <p><strong>Note:</strong> This is a preview. The actual receipt will be generated when printing.</p>
+                        <p>Generated on: ${new Date().toLocaleString()}</p>
+                    </div>
+                </div>
+                
+                <script>
+                    // Auto-close after 30 seconds
+                    setTimeout(() => {
+                        window.close();
+                    }, 30000);
+                </script>
+            </body>
+            </html>
+        `;
+        
+        previewWindow.document.write(previewHTML);
+        previewWindow.document.close();
+        
+    } catch (error) {
+        console.error("❌ Receipt preview failed:", error);
+        setError("Failed to preview receipt: " + error.message);
+    } finally {
+        setIsDownloadingPDF(false);
+    }
+};
+
+const handlePrintReceipt = (printerType = 'REGULAR') => {
+    if (!receiptData) return;
+    
+    setIsPrinting(true);
+    try {
+        const success = utilsPrintReceipt(receiptData, printerType);
+        if (!success) {
+            throw new Error('Failed to open print window');
         }
-    };
+    } catch (error) {
+        console.error("❌ Print failed:", error);
+        setError("Failed to print receipt: " + error.message);
+    } finally {
+        setIsPrinting(false);
+    }
+};
+
+const handleDirectUSBPrint = () => {
+  // Show instructions
+  const proceed = window.confirm(
+    'For direct USB printing:\n\n' +
+    '1. Ensure your receipt printer is connected via USB\n' +
+    '2. Set it as default printer in your system\n' +
+    '3. Click OK to print receipt\n\n' +
+    'If automatic printing fails:\n' +
+    '- Press Ctrl+P on the receipt window\n' +
+    '- Select your receipt printer\n' +
+    '- Click Print\n\n' +
+    'Click OK to continue printing.'
+  );
+  
+  if (proceed) {
+    // Use the new unified printing function with THERMAL format
+    handlePrintReceipt('THERMAL');
+  }
+};
 
     // NEW: RESET AFTER PAYMENT
     const handlePaymentComplete = () => {
         setShowReceiptOptions(false);
+        setShowPrintOptions(false);
         setPaymentForm({
             amount: '',
             paymentMethod: 'CASH',
@@ -501,6 +872,16 @@ const FeePaymentScanner = () => {
                            status === 'PARTIAL' ? 'partial' : 'pending';
         return <span className={`fee-status-badge ${statusClass}`}>{status}</span>;
     };
+
+    // Loading overlay
+    if ((isLoadingFeeStructure) && scannedStudent && selectedPaymentClass) {
+        return (
+            <div className="loading-overlay">
+                <div className="loading-spinner"></div>
+                <p>Loading fee structure...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="fee-scanner-container">
@@ -654,24 +1035,145 @@ const FeePaymentScanner = () => {
 
                     {/* Current Fee Status */}
                     <div className="fee-status-card">
-                        <h4>Current Payment Status - {selectedPaymentClass.className}</h4>
+                        <div className="fee-status-header">
+                            <div>
+                                <h4>Fee Status for {feeStatus.month}</h4>
+                                <small className="month-note">
+                                    Showing status for: <strong>{feeStatus.month}</strong>
+                                </small>
+                            </div>
+                            {getStatusBadge(feeStatus.overallStatus)}
+                        </div>
+                        
                         <div className="fee-breakdown">
                             <div className="fee-item">
-                                <span>Total Due:</span>
-                                <span className="amount">{formatCurrency(feeStatus.totalDue)}</span>
+                                <span>Monthly Fee Due:</span>
+                                <span>{formatCurrency(feeStatus.totalDue || 0)}</span>
                             </div>
                             <div className="fee-item">
-                                <span>Total Paid:</span>
-                                <span className="amount paid">{formatCurrency(feeStatus.totalPaid)}</span>
+                                <span>Paid for {feeStatus.month}:</span>
+                                <span className="amount paid">{formatCurrency(feeStatus.totalPaid || 0)}</span>
                             </div>
                             <div className="fee-item total">
-                                <span>Remaining Balance:</span>
-                                <span className={`amount ${feeStatus.balance > 0 ? 'pending' : 'paid'}`}>
-                                    {formatCurrency(feeStatus.balance)}
+                                <span>Balance for {feeStatus.month}:</span>
+                                <span className={`amount ${(feeStatus.balance || 0) > 0 ? 'pending' : 'paid'}`}>
+                                    {formatCurrency(feeStatus.balance || 0)}
                                 </span>
                             </div>
                         </div>
+                        
+                        {/* Month navigation */}
+                        <div className="month-navigation">
+                            <button 
+                                onClick={() => {
+                                    try {
+                                        const [year, month] = paymentForm.month.split('-').map(Number);
+                                        let newYear = year;
+                                        let newMonth = month - 1;
+                                        
+                                        if (newMonth < 1) {
+                                            newMonth = 12;
+                                            newYear = year - 1;
+                                        }
+                                        
+                                        const newMonthStr = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+                                        setPaymentForm(prev => ({ ...prev, month: newMonthStr }));
+                                    } catch (error) {
+                                        console.error('Error calculating previous month:', error);
+                                    }
+                                }}
+                                className="month-nav-btn"
+                                disabled={isProcessing || isLoadingFeeStructure}
+                            >
+                                ← Previous Month
+                            </button>
+                            
+                            <button 
+                                onClick={() => {
+                                    const today = new Date();
+                                    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+                                    setPaymentForm(prev => ({ ...prev, month: currentMonth }));
+                                }}
+                                className="month-nav-btn current"
+                                disabled={isProcessing || isLoadingFeeStructure || paymentForm.month === getCurrentMonth()}
+                            >
+                                Current Month
+                            </button>
+                            
+                            <button 
+                                onClick={() => {
+                                    try {
+                                        const [year, month] = paymentForm.month.split('-').map(Number);
+                                        let newYear = year;
+                                        let newMonth = month + 1;
+                                        
+                                        if (newMonth > 12) {
+                                            newMonth = 1;
+                                            newYear = year + 1;
+                                        }
+                                        
+                                        const newMonthStr = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+                                        
+                                        // Check if the new month is in the future
+                                        const today = new Date();
+                                        const currentYear = today.getFullYear();
+                                        const currentMonthNum = today.getMonth() + 1;
+                                        
+                                        const isFutureMonth = newYear > currentYear || 
+                                                              (newYear === currentYear && newMonth > currentMonthNum);
+                                        
+                                        if (isFutureMonth) {
+                                            console.warn('Cannot navigate to future month:', newMonthStr);
+                                            alert(`Cannot navigate to future months (${newMonthStr}). You can only view current and past months.`);
+                                            return;
+                                        }
+                                        
+                                        setPaymentForm(prev => ({ ...prev, month: newMonthStr }));
+                                    } catch (error) {
+                                        console.error('Error calculating next month:', error);
+                                    }
+                                }}
+                                className="month-nav-btn"
+                                disabled={isProcessing || isLoadingFeeStructure || isFutureMonth(paymentForm.month)}
+                            >
+                                Next Month →
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Payment History */}
+                    {existingPayments.length > 0 && (
+                        <div className="payment-history-card">
+                            <h4>Payment History</h4>
+                            <div className="payment-months">
+                                {Array.from(new Set(existingPayments.map(p => p.month))).sort().reverse().map(month => {
+                                    const monthPayments = existingPayments.filter(p => p.month === month);
+                                    const monthTotal = monthPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+                                    const isCurrentMonth = month === paymentForm.month;
+                                    
+                                    return (
+                                        <div 
+                                            key={month} 
+                                            className={`payment-month-item ${isCurrentMonth ? 'active' : ''}`}
+                                            onClick={() => setPaymentForm(prev => ({ ...prev, month: month }))}
+                                        >
+                                            <div className="month-header">
+                                                <strong>{month}</strong>
+                                                <span className={`month-status ${monthTotal >= (classFeeStructure?.totalFee || 0) ? 'paid' : 'partial'}`}>
+                                                    {monthTotal >= (classFeeStructure?.totalFee || 0) ? 'PAID' : 'PARTIAL'}
+                                                </span>
+                                            </div>
+                                            <div className="month-details">
+                                                <span>Payments: {monthPayments.length}</span>
+                                                <span className="month-total">{formatCurrency(monthTotal)}</span>
+                                            </div>
+                                            {isCurrentMonth && <div className="current-indicator">✓ Viewing</div>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* NEW: Email Notification Section */}
                     {!showReceiptOptions && (
@@ -707,12 +1209,14 @@ const FeePaymentScanner = () => {
                             <button 
                                 onClick={() => setPaymentForm({...paymentForm, amount: classFeeStructure.totalFee.toString()})}
                                 className="suggestion-btn full-fee"
+                                disabled={isProcessing}
                             >
                                 Pay Full Fee: {formatCurrency(classFeeStructure.totalFee)}
                             </button>
                             <button 
                                 onClick={() => setPaymentForm({...paymentForm, amount: classFeeStructure.monthlyFee.toString()})}
                                 className="suggestion-btn monthly"
+                                disabled={isProcessing}
                             >
                                 Monthly Only: {formatCurrency(classFeeStructure.monthlyFee)}
                             </button>
@@ -720,6 +1224,7 @@ const FeePaymentScanner = () => {
                                 <button 
                                     onClick={() => setPaymentForm({...paymentForm, amount: feeStatus.balance.toString()})}
                                     className="suggestion-btn balance"
+                                    disabled={isProcessing}
                                 >
                                     Pay Balance: {formatCurrency(feeStatus.balance)}
                                 </button>
@@ -736,6 +1241,7 @@ const FeePaymentScanner = () => {
                                     placeholder="Enter amount"
                                     min="0"
                                     step="0.01"
+                                    disabled={isProcessing}
                                 />
                                 <small>Full fee: {formatCurrency(classFeeStructure.totalFee)} | Balance: {formatCurrency(feeStatus.balance)}</small>
                             </div>
@@ -745,6 +1251,7 @@ const FeePaymentScanner = () => {
                                 <select
                                     value={paymentForm.paymentMethod}
                                     onChange={(e) => setPaymentForm({...paymentForm, paymentMethod: e.target.value})}
+                                    disabled={isProcessing}
                                 >
                                     <option value="CASH">Cash</option>
                                     <option value="CARD">Card</option>
@@ -759,6 +1266,7 @@ const FeePaymentScanner = () => {
                                     type="month"
                                     value={paymentForm.month}
                                     onChange={(e) => setPaymentForm({...paymentForm, month: e.target.value})}
+                                    disabled={isProcessing || isLoadingFeeStructure}
                                 />
                             </div>
 
@@ -769,14 +1277,14 @@ const FeePaymentScanner = () => {
                                     onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
                                     placeholder={`Additional notes about payment for ${selectedPaymentClass.className}...`}
                                     rows="3"
+                                    disabled={isProcessing}
                                 />
                             </div>
                         </div>
-
                         <div className="payment-actions">
                             <button 
                                 onClick={handlePayment}
-                                disabled={isProcessing || !paymentForm.amount || parseFloat(paymentForm.amount) <= 0}
+                                disabled={isProcessing || !paymentForm.amount || parseFloat(paymentForm.amount) <= 0 || isLoadingFeeStructure}
                                 className="pay-btn"
                             >
                                 {isProcessing ? (
@@ -821,6 +1329,10 @@ const FeePaymentScanner = () => {
                                             </span>
                                         </div>
                                         <div className="summary-item">
+                                            <span>Payment Method:</span>
+                                            <span>{receiptData.paymentMethod}</span>
+                                        </div>
+                                        <div className="summary-item">
                                             <span>For Month:</span>
                                             <span>{receiptData.month}</span>
                                         </div>
@@ -832,19 +1344,73 @@ const FeePaymentScanner = () => {
                                             <span>Date:</span>
                                             <span>{receiptData.date}</span>
                                         </div>
+                                        {/* Add fee breakdown summary */}
+                                        {receiptData.feeBreakdown && (
+                                            <>
+                                                <div className="summary-item fee-breakdown-header">
+                                                    <span colSpan="2"><strong>Fee Breakdown:</strong></span>
+                                                </div>
+                                                {receiptData.feeBreakdown.monthlyFee > 0 && (
+                                                    <div className="summary-item fee-detail">
+                                                        <span>Monthly Fee:</span>
+                                                        <span>{formatCurrency(receiptData.feeBreakdown.monthlyFee)}</span>
+                                                    </div>
+                                                )}
+                                                {receiptData.feeBreakdown.admissionFee > 0 && (
+                                                    <div className="summary-item fee-detail">
+                                                        <span>Admission Fee:</span>
+                                                        <span>{formatCurrency(receiptData.feeBreakdown.admissionFee)}</span>
+                                                    </div>
+                                                )}
+                                                {receiptData.feeBreakdown.examFee > 0 && (
+                                                    <div className="summary-item fee-detail">
+                                                        <span>Exam Fee:</span>
+                                                        <span>{formatCurrency(receiptData.feeBreakdown.examFee)}</span>
+                                                    </div>
+                                                )}
+                                                {receiptData.feeBreakdown.sportsFee > 0 && (
+                                                    <div className="summary-item fee-detail">
+                                                        <span>Sports Fee:</span>
+                                                        <span>{formatCurrency(receiptData.feeBreakdown.sportsFee)}</span>
+                                                    </div>
+                                                )}
+                                                {receiptData.feeBreakdown.libraryFee > 0 && (
+                                                    <div className="summary-item fee-detail">
+                                                        <span>Library Fee:</span>
+                                                        <span>{formatCurrency(receiptData.feeBreakdown.libraryFee)}</span>
+                                                    </div>
+                                                )}
+                                                {receiptData.feeBreakdown.labFee > 0 && (
+                                                    <div className="summary-item fee-detail">
+                                                        <span>Lab Fee:</span>
+                                                        <span>{formatCurrency(receiptData.feeBreakdown.labFee)}</span>
+                                                    </div>
+                                                )}
+                                                {receiptData.feeBreakdown.otherFee > 0 && (
+                                                    <div className="summary-item fee-detail">
+                                                        <span>Other Fees:</span>
+                                                        <span>{formatCurrency(receiptData.feeBreakdown.otherFee)}</span>
+                                                    </div>
+                                                )}
+                                                <div className="summary-item total-fee">
+                                                    <span><strong>Total Fee:</strong></span>
+                                                    <span><strong>{formatCurrency(receiptData.feeBreakdown.totalFee)}</strong></span>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                                 
                                 <div className="receipt-actions">
                                     <button 
                                         onClick={handleDownloadReceipt}
-                                        disabled={isDownloadingPDF}
+                                        disabled={isDownloadingPDF || isPrinting}
                                         className="download-receipt-btn primary"
                                     >
-                                        {isDownloadingPDF ? (
+                                        {(isDownloadingPDF || isPrinting) ? (
                                             <>
                                                 <div className="spinner-small"></div>
-                                                Downloading PDF...
+                                                {isDownloadingPDF ? 'Downloading PDF...' : 'Printing...'}
                                             </>
                                         ) : (
                                             '📥 Download Official Receipt (PDF)'
@@ -854,15 +1420,15 @@ const FeePaymentScanner = () => {
                                     <div className="receipt-secondary-actions">
                                         <button 
                                             onClick={handlePreviewReceipt}
-                                            disabled={isDownloadingPDF}
+                                            disabled={isDownloadingPDF || isPrinting}
                                             className="action-btn preview"
                                         >
                                             👁️ Preview Receipt
                                         </button>
                                         
                                         <button 
-                                            onClick={handlePrintReceipt}
-                                            disabled={isDownloadingPDF}
+                                            onClick={() => setShowPrintOptions(!showPrintOptions)}
+                                            disabled={isDownloadingPDF || isPrinting}
                                             className="action-btn print"
                                         >
                                             🖨️ Print Receipt
@@ -871,6 +1437,7 @@ const FeePaymentScanner = () => {
                                         <button 
                                             onClick={handlePaymentComplete}
                                             className="action-btn done"
+                                            disabled={isDownloadingPDF || isPrinting}
                                         >
                                             ✓ Done
                                         </button>
@@ -878,10 +1445,104 @@ const FeePaymentScanner = () => {
                                         <button 
                                             onClick={scanNext}
                                             className="action-btn next"
+                                            disabled={isDownloadingPDF || isPrinting}
                                         >
                                             🔄 Scan Next Student
                                         </button>
                                     </div>
+
+                                    {showPrintOptions && (
+                                        <div className="print-options-modal">
+                                            <div className="modal-content">
+                                            <div className="modal-header">
+                                                <h5>Select Print Method</h5>
+                                                <button 
+                                                onClick={() => setShowPrintOptions(false)} 
+                                                className="close-btn"
+                                                disabled={isPrinting}
+                                                >
+                                                ✕
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="print-instructions">
+                                                <p className="instruction-note">
+                                                <strong>Note:</strong> Ensure your printer is connected and turned on before printing.
+                                                </p>
+                                            </div>
+                                            
+                                            <div className="print-options">
+                                                <button 
+                                                onClick={() => {
+                                                    setShowPrintOptions(false);
+                                                    handlePrintReceipt('REGULAR');
+                                                }}
+                                                className="print-option-btn"
+                                                disabled={isPrinting}
+                                                >
+                                                🖨️ Regular Printer
+                                                <small>For A4/Letter paper with detailed breakdown</small>
+                                                </button>
+                                                
+                                                <button 
+                                                onClick={() => {
+                                                    setShowPrintOptions(false);
+                                                    handlePrintReceipt('THERMAL');
+                                                }}
+                                                className="print-option-btn terminal"
+                                                disabled={isPrinting}
+                                                >
+                                                🧾 Thermal/Receipt Printer
+                                                <small>For 80mm thermal paper printers</small>
+                                                </button>
+                                                
+                                                <button 
+                                                onClick={() => {
+                                                    setShowPrintOptions(false);
+                                                    handlePrintReceipt('DOT_MATRIX');
+                                                }}
+                                                className="print-option-btn"
+                                                disabled={isPrinting}
+                                                >
+                                                🖨️ Dot Matrix Printer
+                                                <small>For 80mm continuous paper printers</small>
+                                                </button>
+                                                
+                                                <button 
+                                                onClick={() => {
+                                                    setShowPrintOptions(false);
+                                                    // Show instructions first
+                                                    if (window.confirm(
+                                                    'For direct USB printing:\n\n' +
+                                                    '1. Ensure your receipt printer is connected\n' +
+                                                    '2. Set it as default printer\n' +
+                                                    '3. Click OK to print receipt\n\n' +
+                                                    'If printing fails, press Ctrl+P in the receipt window.'
+                                                    )) {
+                                                    handlePrintReceipt('THERMAL');
+                                                    }
+                                                }}
+                                                className="print-option-btn direct"
+                                                disabled={isPrinting}
+                                                >
+                                                🔌 Direct USB Print
+                                                <small>For connected receipt printers</small>
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="print-tips">
+                                                <h6>Printing Tips:</h6>
+                                                <ul>
+                                                <li>For thermal printers, select "Save as PDF" then print from PDF viewer</li>
+                                                <li>Set page size to 80mm width for receipt printers</li>
+                                                <li>Use "Courier New" font for best thermal printer results</li>
+                                                <li>For dot matrix printers, use continuous paper (80mm width)</li>
+                                                <li>Regular printers work best with A4 or Letter paper</li>
+                                                </ul>
+                                            </div>
+                                            </div>
+                                        </div>
+                                        )}
                                     
                                     <div className="email-confirmation-note">
                                         {receiptData.studentEmail ? (

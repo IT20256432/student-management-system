@@ -201,6 +201,7 @@ export const studentAPI = {
 export const classAPI = {
   getAll: () => apiGet('/classes'),
   getAllActive: () => apiGet('/classes/active'),
+  getAllClasses: () => apiGet('/classes'),
   getById: (id) => apiGet(`/classes/${id}`),
   create: (classData) => apiPost('/classes', classData),
   update: (id, classData) => apiPut(`/classes/${id}`, classData),
@@ -510,8 +511,7 @@ downloadReceiptPDF: async (paymentId) => {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Accept': 'application/pdf', // ← FIX: Request PDF, not JSON
-                // Remove 'Content-Type' for GET requests
+                'Accept': 'application/pdf', 
             },
             credentials: 'include'
         });
@@ -579,30 +579,52 @@ downloadReceiptPDF: async (paymentId) => {
     }
 },  
   
-  // ✅ ADD THIS FUNCTION FOR BASE64 RECEIPT:
   getReceiptBase64: async (paymentId) => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/fee-payments/receipt/${paymentId}/base64`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to get receipt data');
-      }
-      
-      return await response.json();
-      
-    } catch (error) {
-      console.error('❌ Receipt fetch error:', error);
-      throw error;
+  try {
+    console.log(`📄 Fetching receipt base64 for payment: ${paymentId}`);
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
     }
-  },
+    
+    const response = await fetch(
+      `${API_BASE_URL}/fee-payments/receipt/${paymentId}/base64`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,  // ✅ ADD THIS
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
+      }
+    );
+    
+    console.log('📄 Response status:', response.status);
+    console.log('📄 Response headers:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        errorMessage = errorText || errorMessage;
+      } catch (e) {
+        // Ignore
+      }
+      throw new Error(`Failed to get receipt data: ${errorMessage}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Receipt data fetched successfully');
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Receipt fetch error:', error);
+    throw error;
+  }
+},
   
   // Get fee status (general) - WITH GRACE PERIOD SUPPORT
   getFeeStatus: async (studentId) => {
@@ -645,127 +667,357 @@ downloadReceiptPDF: async (paymentId) => {
     }
   },
   
-  // Get fee status for specific class - FALLBACK IMPLEMENTATION
   getFeeStatusForClass: async (studentId, classId) => {
-    console.log(`📊 Getting fee status for student ${studentId}, class ${classId}`);
+  console.log(`📊 [DEBUG] Getting ACTUAL fee status for student ${studentId}, class ${classId}`);
+  
+  try {
+    // Try to get class-specific payments first
+    console.log('📊 [DEBUG] Step 1: Getting class-specific payments...');
+    const classPayments = await feePaymentAPI.getStudentPaymentsForClass(studentId, classId);
+    console.log('📊 [DEBUG] Class payments found:', classPayments.length);
     
+    // Calculate total paid for this specific class
+    const totalPaid = classPayments.reduce((sum, payment) => {
+      return sum + (payment.amountPaid || 0);
+    }, 0);
+    
+    console.log('📊 [DEBUG] Total paid for class', classId, ':', totalPaid);
+    
+    // Get fee structure for this specific class
+    console.log('📊 [DEBUG] Step 2: Getting fee structure for class', classId);
+    let feeStructure;
     try {
-      // First try the standard endpoint
-      const status = await apiGet(`/fee-payments/student/${encodeURIComponent(studentId)}/status`);
-      
-      // If we got the status but it's for a different class, adapt it
-      if (status.classId && status.classId !== classId) {
-        console.log(`⚠️ Fee status is for class ${status.classId}, not ${classId}. Adapting...`);
-        status.classId = classId;
-        status.isAdapted = true;
-      }
-      
-      return status;
-    } catch (error) {
-      console.log(`⚠️ Fee status endpoint not available, using fallback: ${error.message}`);
-      
-      // Fallback logic
-      try {
-        // Try to get student info
-        const student = await studentAPI.getByStudentId(studentId).catch(() => null);
-        
-        // Try to get class info
-        const classInfo = await classAPI.getById(classId).catch(() => null);
-        
-        // Get current date for grace period logic
-        const today = new Date();
-        const currentDay = today.getDate();
-        const isGracePeriodActive = currentDay <= 14;
-        const daysOverdue = currentDay > 14 ? currentDay - 15 : 0;
-        
-        // Try to get actual payments
-        const payments = await feePaymentAPI.getStudentPayments(studentId).catch(() => []);
-        
-        // Filter payments for this class
-        const classPayments = payments.filter(p => p.classId === classId);
-        const totalPaid = classPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
-        
-        // Get fee structure
-        let totalDue = 8000; // Default
-        try {
-          const feeStructure = await feeAPI.getByClass(classId);
-          if (feeStructure) totalDue = feeStructure.totalFee || totalDue;
-        } catch (feeError) {
-          console.log('Using default fee amount');
-        }
-        
-        const balance = totalDue - totalPaid;
-        let overallStatus;
-        
-        if (balance <= 0) {
-          overallStatus = 'PAID';
-        } else if (isGracePeriodActive) {
-          overallStatus = totalPaid > 0 ? 'PARTIAL' : 'PENDING';
-        } else {
-          overallStatus = 'OVERDUE';
-        }
-        
-        const fallbackStatus = {
-          studentId,
-          studentName: student ? `${student.firstName} ${student.lastName}` : 'Unknown Student',
-          className: classInfo ? classInfo.className : `Class ${classId}`,
-          classId,
-          totalDue,
-          totalPaid,
-          balance,
-          overallStatus,
-          paymentStatus: overallStatus === 'PAID' ? 'COMPLETE' : 
-                       overallStatus === 'PENDING' ? 'GRACE_PERIOD' :
-                       overallStatus === 'PARTIAL' ? 'IN_PROGRESS' : 'UNPAID',
-          daysOverdue: overallStatus === 'OVERDUE' ? daysOverdue : null,
-          gracePeriodActive: isGracePeriodActive,
-          gracePeriodEnds: isGracePeriodActive ? 14 - currentDay : 0,
-          nextDueDate: isGracePeriodActive 
-            ? new Date(today.getFullYear(), today.getMonth(), 15).toISOString().split('T')[0]
-            : new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString().split('T')[0],
-          isFallback: true
-        };
-        
-        return fallbackStatus;
-      } catch (fallbackError) {
-        console.error('Fallback fee status failed:', fallbackError);
-        
-        // Ultimate fallback with current date logic
-        const today = new Date();
-        const currentDay = today.getDate();
-        const isGracePeriodActive = currentDay <= 14;
-        
-        // Ultimate fallback
-        return {
-          studentId,
-          studentName: 'Unknown',
-          className: 'Unknown Class',
-          classId,
-          totalDue: 8000,
-          totalPaid: 0,
-          balance: 8000,
-          overallStatus: isGracePeriodActive ? 'PENDING' : 'OVERDUE',
-          paymentStatus: isGracePeriodActive ? 'GRACE_PERIOD' : 'UNPAID',
-          daysOverdue: isGracePeriodActive ? 0 : currentDay - 15,
-          gracePeriodActive: isGracePeriodActive,
-          gracePeriodEnds: isGracePeriodActive ? 14 - currentDay : 0,
-          nextDueDate: isGracePeriodActive 
-            ? new Date(today.getFullYear(), today.getMonth(), 15).toISOString().split('T')[0]
-            : new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString().split('T')[0],
-          isFallback: true
-        };
+      feeStructure = await feeAPI.getByClass(classId);
+      console.log('📊 [DEBUG] Fee structure found:', feeStructure);
+    } catch (feeError) {
+      console.log('📊 [DEBUG] Using fallback fee structure');
+      // Get fallback based on class grade
+      const classInfo = await classAPI.getById(classId).catch(() => ({ grade: 'A/L' }));
+      const fallbackFees = {
+        'A/L': { totalFee: 10500 },
+        'O/L': { totalFee: 8000 }
+      };
+      feeStructure = { totalFee: fallbackFees[classInfo.grade]?.totalFee || 8000 };
+    }
+    
+    const totalDue = feeStructure.totalFee || 8000;
+    const balance = totalDue - totalPaid;
+    
+    // Determine status
+    let overallStatus;
+    let paymentStatus;
+    
+    if (balance <= 0) {
+      overallStatus = 'PAID';
+      paymentStatus = 'COMPLETE';
+    } else if (totalPaid > 0) {
+      overallStatus = 'PARTIAL';
+      paymentStatus = 'IN_PROGRESS';
+    } else {
+      const today = new Date();
+      const currentDay = today.getDate();
+      if (currentDay <= 14) {
+        overallStatus = 'PENDING';
+        paymentStatus = 'GRACE_PERIOD';
+      } else {
+        overallStatus = 'OVERDUE';
+        paymentStatus = 'UNPAID';
       }
     }
-  },
+    
+    // Get student and class info
+    const student = await studentAPI.getByStudentId(studentId).catch(() => null);
+    const classInfo = await classAPI.getById(classId).catch(() => null);
+    
+    const feeStatus = {
+      studentId,
+      studentName: student ? `${student.firstName} ${student.lastName}` : 'Unknown',
+      className: classInfo ? classInfo.className : `Class ${classId}`,
+      classId,
+      totalDue,
+      totalPaid,
+      balance,
+      overallStatus,
+      paymentStatus,
+      daysOverdue: overallStatus === 'OVERDUE' ? Math.max(0, new Date().getDate() - 15) : 0,
+      gracePeriodActive: new Date().getDate() <= 14,
+      gracePeriodEnds: new Date().getDate() <= 14 ? 14 - new Date().getDate() : 0,
+      nextDueDate: new Date().getDate() <= 14 
+        ? new Date(new Date().getFullYear(), new Date().getMonth(), 15).toISOString().split('T')[0]
+        : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0],
+      isCalculated: true,
+      debug: {
+        classPaymentsCount: classPayments.length,
+        totalPaidCalculated: totalPaid,
+        feeStructureUsed: feeStructure.totalFee,
+        balanceCalculated: balance
+      }
+    };
+    
+    console.log('📊 [DEBUG] Calculated fee status:', feeStatus);
+    return feeStatus;
+    
+  } catch (error) {
+    console.error('❌ [DEBUG] Error calculating class-specific fee status:', error);
+    
+    // Fallback: Use the general endpoint
+    try {
+      console.log('📊 [DEBUG] Using general fee status as fallback');
+      const generalStatus = await feePaymentAPI.getFeeStatus(studentId);
+      
+      // Adapt it for the specific class
+      const adaptedStatus = {
+        ...generalStatus,
+        classId: classId,
+        className: 'Unknown Class', // We'll try to get the actual name
+        isAdapted: true,
+        debugNote: 'Adapted from general status'
+      };
+      
+      // Try to get actual class name
+      try {
+        const classInfo = await classAPI.getById(classId);
+        if (classInfo) {
+          adaptedStatus.className = classInfo.className;
+          
+          // Try to get actual payments for this class
+          const classPayments = await feePaymentAPI.getStudentPaymentsForClass(studentId, classId);
+          if (classPayments && classPayments.length > 0) {
+            const totalPaid = classPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+            adaptedStatus.totalPaid = totalPaid;
+            adaptedStatus.balance = adaptedStatus.totalDue - totalPaid;
+            
+            // Recalculate status
+            if (adaptedStatus.balance <= 0) {
+              adaptedStatus.overallStatus = 'PAID';
+            } else if (totalPaid > 0) {
+              adaptedStatus.overallStatus = 'PARTIAL';
+            } else {
+              const today = new Date();
+              const currentDay = today.getDate();
+              adaptedStatus.overallStatus = currentDay <= 14 ? 'PENDING' : 'OVERDUE';
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Could not enhance adapted status:', e.message);
+      }
+      
+      return adaptedStatus;
+      
+    } catch (generalError) {
+      console.error('❌ [DEBUG] General status also failed:', generalError);
+      
+      // Ultimate fallback
+      const today = new Date();
+      const currentDay = today.getDate();
+      const isGracePeriodActive = currentDay <= 14;
+      
+      return {
+        studentId,
+        studentName: 'Unknown',
+        className: 'Unknown Class',
+        classId,
+        totalDue: 8000,
+        totalPaid: 0, // IMPORTANT: Set to 0
+        balance: 8000, // IMPORTANT: Balance should equal total due
+        overallStatus: isGracePeriodActive ? 'PENDING' : 'OVERDUE',
+        paymentStatus: isGracePeriodActive ? 'GRACE_PERIOD' : 'UNPAID',
+        daysOverdue: isGracePeriodActive ? 0 : currentDay - 15,
+        gracePeriodActive: isGracePeriodActive,
+        gracePeriodEnds: isGracePeriodActive ? 14 - currentDay : 0,
+        nextDueDate: isGracePeriodActive 
+          ? new Date(today.getFullYear(), today.getMonth(), 15).toISOString().split('T')[0]
+          : new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString().split('T')[0],
+        isFallback: true,
+        debugNote: 'Ultimate fallback - assuming NO payments'
+      };
+    }
+  }
+},
   
-  // Get student payments for specific class
-  getStudentPaymentsForClass: (studentId, classId) => 
-    apiGet(`/fee-payments/student/${encodeURIComponent(studentId)}/class/${classId}`),
+  getStudentPaymentsForClass: async (studentId, classId) => {
+  console.log(`💰 [IMPROVED] Searching payments for student ${studentId}, class ${classId}`);
   
-  // Other endpoints
-  getOverdueStudents: () => apiGet('/fee-payments/overdue'),
+  try {
+    // Method 1: Try the general payments endpoint
+    console.log('💰 Method 1: Trying general payments endpoint...');
+    try {
+      const allPayments = await apiGet(`/fee-payments/student/${encodeURIComponent(studentId)}`);
+      
+      if (Array.isArray(allPayments)) {
+        // Filter by class ID (check multiple possible field names)
+        const filteredPayments = allPayments.filter(payment => {
+          // Check all possible class ID fields
+          const paymentClassId = 
+            payment.classId || 
+            payment.class_id || 
+            payment.schoolClass?.id ||
+            payment.schoolClassId ||
+            payment.feeStructure?.schoolClass?.id;
+          
+          return paymentClassId == classId; // Use == for type coercion
+        });
+        
+        console.log(`💰 Found ${filteredPayments.length} payments via general endpoint`);
+        return filteredPayments;
+      }
+    } catch (error1) {
+      console.log('💰 Method 1 failed:', error1.message);
+    }
+    
+    // Method 2: Try recent payments endpoint
+    console.log('💰 Method 2: Trying recent payments endpoint...');
+    try {
+      const recentPayments = await feePaymentAPI.getRecentPayments();
+      
+      if (Array.isArray(recentPayments)) {
+        // Filter for this student and class
+        const studentRecentPayments = recentPayments.filter(payment => 
+          payment.studentId === studentId && 
+          (payment.classId == classId || payment.schoolClass?.id == classId)
+        );
+        
+        console.log(`💰 Found ${studentRecentPayments.length} recent payments`);
+        return studentRecentPayments;
+      }
+    } catch (error2) {
+      console.log('💰 Method 2 failed:', error2.message);
+    }
+    
+    // Method 3: Try payments by date range (last 30 days)
+    console.log('💰 Method 3: Trying payments by date range...');
+    try {
+      const today = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      const endDate = today.toISOString().split('T')[0];
+      
+      const dateRangePayments = await feePaymentAPI.getPaymentsByDateRange(startDate, endDate);
+      
+      if (Array.isArray(dateRangePayments)) {
+        const filteredPayments = dateRangePayments.filter(payment => 
+          payment.studentId === studentId && 
+          (payment.classId == classId || payment.schoolClass?.id == classId)
+        );
+        
+        console.log(`💰 Found ${filteredPayments.length} payments via date range`);
+        return filteredPayments;
+      }
+    } catch (error3) {
+      console.log('💰 Method 3 failed:', error3.message);
+    }
+    
+    console.log('💰 No payments found through any method');
+    return [];
+    
+  } catch (error) {
+    console.error('💰 Error in getStudentPaymentsForClass:', error);
+    return [];
+  }
+},
+
+// Add this new function to api.js
+checkPaymentExistsDirect: async (studentId, classId, month) => {
+  console.log(`🔍 [DIRECT CHECK] Checking if payment exists:`, { studentId, classId, month });
+  
+  try {
+    // Try multiple endpoint variations
+    const endpoints = [
+      `/fee-payments/student/${encodeURIComponent(studentId)}/exists?classId=${classId}&month=${month}`,
+      `/fee-payments/exists?studentId=${encodeURIComponent(studentId)}&classId=${classId}&month=${month}`,
+      `/fee-payments/check?studentId=${encodeURIComponent(studentId)}&classId=${classId}&month=${month}`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const response = await apiGet(endpoint);
+        console.log(`🔍 Endpoint ${endpoint} responded:`, response);
+        return response.exists || response.paymentExists || false;
+      } catch (endpointError) {
+        continue; // Try next endpoint
+      }
+    }
+    
+    // If no endpoint works, check via payments list
+    const payments = await feePaymentAPI.getStudentPaymentsForClass(studentId, classId);
+    const paymentExists = payments.some(payment => payment.month === month);
+    
+    console.log(`🔍 Payment exists check via list: ${paymentExists}`);
+    return paymentExists;
+    
+  } catch (error) {
+    console.error('🔍 Error checking payment existence:', error);
+    return false;
+  }
+},
+
+getOverdueStudents: () => apiGet('/fee-payments/overdue'),
   getFeeStatistics: () => apiGet('/fee-payments/statistics'),
-  getRecentPayments: () => apiGet('/fee-payments/recent')
+  getRecentPayments: () => apiGet('/fee-payments/recent'),
+
+getStudentPaymentsForClassAndMonth: async (studentId, classId, month) => {
+  try {
+    const payments = await feePaymentAPI.getStudentPaymentsForClass(studentId, classId);
+    return payments.filter(payment => payment.month === month);
+  } catch (error) {
+    console.error('Error filtering payments by month:', error);
+    return [];
+  }
+},
+
+getPaymentsByDateRange: (startDate, endDate) => {
+    return apiGet(`/fee-payments/by-date-range?startDate=${startDate}&endDate=${endDate}`);
+},
+
+getDailySummary: (date = null) => {
+    let url = '/fee-payments/daily-summary';
+    if (date) {
+        url += `?date=${date}`;
+    }
+    return apiGet(url);
+},
+
+// Simple method for teacher daily settlement (no complex entities needed)
+recordDailyCollection: async (collectionData) => {
+    // Use existing recordPayment but add teacher info
+    const paymentData = {
+        ...collectionData,
+        transactionId: `DAILY-${Date.now()}-${collectionData.teacherId}`
+    };
+    return apiPost('/fee-payments/record', paymentData);
+}
+
+
+};
+
+// Add this debug function to check auth status
+export const checkAuthStatus = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    console.log('🔑 Current token:', token ? 'Present' : 'Missing');
+    
+    if (!token) {
+      console.error('❌ No token in localStorage');
+      return { hasToken: false };
+    }
+    
+    // Try to validate the token
+    try {
+      const response = await apiGet('/auth/validate');
+      console.log('✅ Token is valid:', response);
+      return { hasToken: true, isValid: true, user: response };
+    } catch (validateError) {
+      console.error('❌ Token validation failed:', validateError.message);
+      return { hasToken: true, isValid: false };
+    }
+    
+  } catch (error) {
+    console.error('❌ Auth check error:', error);
+    return { hasToken: false, error: error.message };
+  }
 };
 
 // ATTENDANCE API
