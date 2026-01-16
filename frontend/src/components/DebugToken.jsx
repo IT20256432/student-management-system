@@ -26,7 +26,7 @@ const DebugToken = () => {
 
   const testApiCall = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/students', {
+      const response = await fetch('https://management.sammanaedu.com/api/students', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'

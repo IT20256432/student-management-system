@@ -4,16 +4,23 @@ import com.example.SM.entity.Student;
 import com.example.SM.entity.SchoolClass;
 import com.example.SM.service.StudentService;
 import com.example.SM.service.SchoolClassService;
+import com.example.SM.service.EmailService;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.sql.DataSource; // ADD THIS IMPORT
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +29,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/students")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000"})
 public class StudentController {
     
     @Autowired
@@ -32,50 +39,12 @@ public class StudentController {
     private SchoolClassService schoolClassService;
     
     @Autowired
-    private DataSource dataSource; // ADD THIS
+    private EmailService emailService;
     
-    @PostMapping("/register")
-    public ResponseEntity<?> registerStudent(@RequestBody Student student) {
-        try {
-            System.out.println("🎯 ===== REGISTER STUDENT CONTROLLER =====");
-            System.out.println("📋 Student first name: " + student.getFirstName());
-            System.out.println("🏫 SchoolClass object: " + student.getSchoolClass());
-            System.out.println("🔢 SchoolClass ID: " + 
-                (student.getSchoolClass() != null ? student.getSchoolClass().getId() : "null"));
-            
-            if (student.getSchoolClass() != null && student.getSchoolClass().getId() != null) {
-                Optional<SchoolClass> schoolClass = schoolClassService.getClassById(student.getSchoolClass().getId());
-                if (schoolClass.isEmpty()) {
-                    Map<String, String> errorResponse = new HashMap<>();
-                    errorResponse.put("error", "Invalid class ID: " + student.getSchoolClass().getId());
-                    return ResponseEntity.badRequest().body(errorResponse);
-                }
-                student.setSchoolClass(schoolClass.get());
-                
-                if (!student.getGrade().equals(schoolClass.get().getGrade())) {
-                    Map<String, String> errorResponse = new HashMap<>();
-                    errorResponse.put("error", "Student grade (" + student.getGrade() + 
-                                      ") must match class grade (" + schoolClass.get().getGrade() + ")");
-                    return ResponseEntity.badRequest().body(errorResponse);
-                }
-            }
-            
-            Student registeredStudent = studentService.registerStudent(student);
-            
-            System.out.println("✅ Controller: Student registered with ID: " + registeredStudent.getId());
-            System.out.println("🎓 Controller: Class ID after registration: " + registeredStudent.getClassId());
-            
-            return ResponseEntity.ok(registeredStudent);
-        } catch (Exception e) {
-            System.err.println("💥 Controller error: " + e.getMessage());
-            e.printStackTrace();
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
+    @Autowired
+    private DataSource dataSource;
     
-    // ADD THIS NEW ENDPOINT - SIMPLE DIRECT SQL REGISTRATION
+    // UPDATED: This method now handles QR generation and email
     @PostMapping("/register-direct")
     public ResponseEntity<?> registerStudentDirect(@RequestBody Map<String, Object> request) {
         try {
@@ -123,6 +92,7 @@ public class StudentController {
                         ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', CURDATE(), NOW())";
             
             Long newStudentId = null;
+            String className = "Not Assigned";
             
             try (Connection conn = dataSource.getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -168,7 +138,6 @@ public class StudentController {
                         System.out.println("✅ DIRECT SQL: Student created with ID: " + newStudentId);
                         
                         // Load the class name for response
-                        String className = "Not Assigned";
                         if (classId != null) {
                             try {
                                 String classSql = "SELECT class_name FROM school_classes WHERE id = ?";
@@ -184,8 +153,65 @@ public class StudentController {
                             }
                         }
                         
-                        // Return student info
+                        // ========== QR CODE GENERATION ==========
+                        System.out.println("🎯 Generating QR code for student: " + studentId);
+                        
+                        // 1. Generate QR data
+                        Map<String, Object> qrDataMap = new HashMap<>();
+                        qrDataMap.put("studentId", studentId);
+                        qrDataMap.put("firstName", firstName);
+                        qrDataMap.put("lastName", lastName);
+                        qrDataMap.put("grade", grade);
+                        qrDataMap.put("email", email);
+                        qrDataMap.put("phone", phone);
+                        qrDataMap.put("classId", classId);
+                        qrDataMap.put("className", className);
+                        qrDataMap.put("registrationDate", LocalDateTime.now().toString());
+                        qrDataMap.put("type", "student_id");
+                        qrDataMap.put("school", "Sammana Educational Institute");
+                        
+                        String qrData = new Gson().toJson(qrDataMap);
+                        System.out.println("📊 QR Data: " + qrData);
+                        
+                        // 2. Generate QR code image (300x300 pixels)
+                        byte[] qrCodeImage = generateQRCodeImage(qrData, 300, 300);
+                        System.out.println("🖼️ QR Image generated: " + qrCodeImage.length + " bytes");
+                        
+                        // 3. Convert to base64 for frontend
+                        String qrImageBase64 = Base64.getEncoder().encodeToString(qrCodeImage);
+                        String qrDataUrl = "data:image/png;base64," + qrImageBase64;
+                        
+                        // 4. Send email with QR code
+                        try {
+                            emailService.sendQRCodeEmail(
+                                email,
+                                firstName + " " + lastName,
+                                studentId,
+                                qrCodeImage,
+                                className
+                            );
+                            System.out.println("📧 Email sent successfully to: " + email);
+                        } catch (Exception e) {
+                            System.err.println("⚠️ Could not send email: " + e.getMessage());
+                            // Don't fail registration if email fails
+                        }
+                        
+                        // 5. Store QR code in database (optional)
+                        try {
+                            String updateSql = "UPDATE students SET qr_code_data = ? WHERE id = ?";
+                            try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                                updateStmt.setString(1, qrData);
+                                updateStmt.setLong(2, newStudentId);
+                                updateStmt.executeUpdate();
+                            }
+                        } catch (Exception e) {
+                            System.err.println("⚠️ Could not store QR data: " + e.getMessage());
+                        }
+                        
+                        // 6. Return everything to frontend
                         Map<String, Object> response = new HashMap<>();
+                        response.put("success", true);
+                        response.put("message", "Student registered successfully");
                         response.put("id", newStudentId);
                         response.put("studentId", studentId);
                         response.put("firstName", firstName);
@@ -197,8 +223,10 @@ public class StudentController {
                         response.put("registrationDate", LocalDate.now().toString());
                         response.put("createdAt", LocalDateTime.now().toString());
                         response.put("status", "Active");
+                        response.put("qrData", qrData); // QR data as JSON
+                        response.put("qrImage", qrDataUrl); // QR as base64 image
                         
-                        System.out.println("✅ DIRECT REGISTRATION COMPLETE");
+                        System.out.println("✅ DIRECT REGISTRATION COMPLETE WITH QR");
                         return ResponseEntity.ok(response);
                     }
                 }
@@ -220,7 +248,212 @@ public class StudentController {
         }
     }
     
+    // QR Code Generation Helper Method
+    private byte[] generateQRCodeImage(String data, int width, int height) {
+        try {
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+            BitMatrix bitMatrix = qrCodeWriter.encode(
+                data, 
+                BarcodeFormat.QR_CODE, 
+                width, 
+                height
+            );
+            
+            java.io.ByteArrayOutputStream pngOutputStream = new java.io.ByteArrayOutputStream();
+            MatrixToImageWriter.writeToStream(bitMatrix, "PNG", pngOutputStream);
+            return pngOutputStream.toByteArray();
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate QR code: " + e.getMessage(), e);
+        }
+    }
+    
+    // NEW ENDPOINT: Get QR code for existing student
+    @GetMapping("/{studentId}/qr")
+    public ResponseEntity<?> getStudentQRCode(@PathVariable String studentId) {
+        try {
+            System.out.println("🎯 Generating QR code for student: " + studentId);
+            
+            // Fetch student from database
+            String sql = "SELECT s.*, c.class_name FROM students s " +
+                        "LEFT JOIN school_classes c ON s.class_id = c.id " +
+                        "WHERE s.student_id = ?";
+            
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setString(1, studentId);
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    // Get student data
+                    String firstName = rs.getString("first_name");
+                    String lastName = rs.getString("last_name");
+                    String grade = rs.getString("grade");
+                    String email = rs.getString("email");
+                    String phone = rs.getString("phone");
+                    Long classId = rs.getLong("class_id");
+                    String className = rs.getString("class_name");
+                    
+                    // Generate QR data
+                    Map<String, Object> qrDataMap = new HashMap<>();
+                    qrDataMap.put("studentId", studentId);
+                    qrDataMap.put("firstName", firstName);
+                    qrDataMap.put("lastName", lastName);
+                    qrDataMap.put("grade", grade);
+                    qrDataMap.put("email", email);
+                    qrDataMap.put("phone", phone);
+                    qrDataMap.put("classId", classId);
+                    qrDataMap.put("className", className);
+                    qrDataMap.put("registrationDate", LocalDateTime.now().toString());
+                    qrDataMap.put("type", "student_id");
+                    qrDataMap.put("school", "Sammana Educational Institute");
+                    
+                    String qrData = new Gson().toJson(qrDataMap);
+                    
+                    // Generate QR code image
+                    byte[] qrCodeImage = generateQRCodeImage(qrData, 300, 300);
+                    String qrImageBase64 = Base64.getEncoder().encodeToString(qrCodeImage);
+                    String qrDataUrl = "data:image/png;base64," + qrImageBase64;
+                    
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", true);
+                    response.put("studentId", studentId);
+                    response.put("qrData", qrData);
+                    response.put("qrImage", qrDataUrl);
+                    
+                    return ResponseEntity.ok(response);
+                } else {
+                    return ResponseEntity.notFound().build();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error generating QR code: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", "Failed to generate QR code: " + e.getMessage(),
+                "success", false
+            ));
+        }
+    }
+    
+    // NEW ENDPOINT: Resend QR code email
+    @PostMapping("/{studentId}/resend-qr")
+    public ResponseEntity<?> resendQRCodeEmail(@PathVariable String studentId) {
+        try {
+            System.out.println("📧 Resending QR code email for student: " + studentId);
+            
+            // Fetch student from database
+            String sql = "SELECT s.*, c.class_name FROM students s " +
+                        "LEFT JOIN school_classes c ON s.class_id = c.id " +
+                        "WHERE s.student_id = ?";
+            
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setString(1, studentId);
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    // Get student data
+                    String firstName = rs.getString("first_name");
+                    String lastName = rs.getString("last_name");
+                    String grade = rs.getString("grade");
+                    String email = rs.getString("email");
+                    String phone = rs.getString("phone");
+                    Long classId = rs.getLong("class_id");
+                    String className = rs.getString("class_name");
+                    
+                    // Generate QR data
+                    Map<String, Object> qrDataMap = new HashMap<>();
+                    qrDataMap.put("studentId", studentId);
+                    qrDataMap.put("firstName", firstName);
+                    qrDataMap.put("lastName", lastName);
+                    qrDataMap.put("grade", grade);
+                    qrDataMap.put("email", email);
+                    qrDataMap.put("phone", phone);
+                    qrDataMap.put("classId", classId);
+                    qrDataMap.put("className", className);
+                    qrDataMap.put("registrationDate", LocalDateTime.now().toString());
+                    qrDataMap.put("type", "student_id");
+                    qrDataMap.put("school", "Sammana Educational Institute");
+                    
+                    String qrData = new Gson().toJson(qrDataMap);
+                    
+                    // Generate QR code image
+                    byte[] qrCodeImage = generateQRCodeImage(qrData, 300, 300);
+                    
+                    // Send email
+                    emailService.sendQRCodeEmail(
+                        email,
+                        firstName + " " + lastName,
+                        studentId,
+                        qrCodeImage,
+                        className
+                    );
+                    
+                    System.out.println("✅ QR code email resent to: " + email);
+                    
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", true);
+                    response.put("message", "QR code email resent successfully");
+                    response.put("email", email);
+                    
+                    return ResponseEntity.ok(response);
+                } else {
+                    return ResponseEntity.notFound().build();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error resending email: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", "Failed to resend email: " + e.getMessage(),
+                "success", false
+            ));
+        }
+    }
+    
     // KEEP ALL YOUR EXISTING METHODS BELOW...
+    @PostMapping("/register")
+    public ResponseEntity<?> registerStudent(@RequestBody Student student) {
+        try {
+            System.out.println("🎯 ===== REGISTER STUDENT CONTROLLER =====");
+            System.out.println("📋 Student first name: " + student.getFirstName());
+            System.out.println("🏫 SchoolClass object: " + student.getSchoolClass());
+            System.out.println("🔢 SchoolClass ID: " + 
+                (student.getSchoolClass() != null ? student.getSchoolClass().getId() : "null"));
+            
+            if (student.getSchoolClass() != null && student.getSchoolClass().getId() != null) {
+                Optional<SchoolClass> schoolClass = schoolClassService.getClassById(student.getSchoolClass().getId());
+                if (schoolClass.isEmpty()) {
+                    Map<String, String> errorResponse = new HashMap<>();
+                    errorResponse.put("error", "Invalid class ID: " + student.getSchoolClass().getId());
+                    return ResponseEntity.badRequest().body(errorResponse);
+                }
+                student.setSchoolClass(schoolClass.get());
+                
+                if (!student.getGrade().equals(schoolClass.get().getGrade())) {
+                    Map<String, String> errorResponse = new HashMap<>();
+                    errorResponse.put("error", "Student grade (" + student.getGrade() + 
+                                      ") must match class grade (" + schoolClass.get().getGrade() + ")");
+                    return ResponseEntity.badRequest().body(errorResponse);
+                }
+            }
+            
+            Student registeredStudent = studentService.registerStudent(student);
+            
+            System.out.println("✅ Controller: Student registered with ID: " + registeredStudent.getId());
+            System.out.println("🎓 Controller: Class ID after registration: " + registeredStudent.getClassId());
+            
+            return ResponseEntity.ok(registeredStudent);
+        } catch (Exception e) {
+            System.err.println("💥 Controller error: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+    
     @GetMapping("/recent")
     public List<Student> getRecentStudents() {
         List<Student> allStudents = studentService.getAllStudents();

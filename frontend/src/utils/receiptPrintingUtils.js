@@ -104,8 +104,8 @@ const createRegularReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
                 
                 .header h1 {
                     margin: 0;
-                    font-size: 22px;
-                    color: #2c3e50;
+                    font-size: 25px;
+                    color: #000000;
                     font-weight: 600;
                 }
                 
@@ -266,7 +266,7 @@ const createRegularReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
                         padding: 0 !important;
                     }
                     .header h1 {
-                        font-size: 18px !important;
+                        font-size: 22px !important;
                     }
                     .amount-highlight {
                         font-size: 16px !important;
@@ -283,6 +283,8 @@ const createRegularReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
                 <!-- Header -->
                 <div class="header">
                     <h1> Sammana Educational Institute </h1>
+                    <h1> Sarananda Mawatha, Kalutara </h1>
+                    <h2> Tel : 034 2121400 </h2>
                     <h2>FEE PAYMENT RECEIPT</h2>
                     <div class="subtitle">${isFullPayment ? 'FULL PAYMENT' : 'PARTIAL PAYMENT'}</div>
                     <div class="receipt-id">TXN: ${receiptData.transactionId}</div>
@@ -469,7 +471,7 @@ const createThermalReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
                 // For partial payments
                 feeBreakdownHTML = `
                     <div class="divider"></div>
-                    <div class="text-center"><strong>PAYMENT SUMMARY</strong></div>
+                    <div class="text-left"><strong>PAYMENT SUMMARY</strong></div>
                     <div class="divider"></div>
                     <div class="row">
                         <div class="text-left">Total Fee:</div>
@@ -528,17 +530,22 @@ const createThermalReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
                         margin: 2px 0;
                     }
                     .header {
-                        font-size: 12px;
+                        font-size: 17px;
                         font-weight: bold;
                         margin: 8px 0;
                     }
+                    .medium {
+                        font-size: 14px;
+                        font-weight: bold;    
+                    }
                     .small {
-                        font-size: 9px;
+                        font-size: 13px;
+                        font-weight: bold;
                     }
                 }
                 body {
                     font-family: 'Courier New', monospace;
-                    font-size: 10px;
+                    font-size: 12px;
                     line-height: 1.1;
                     margin: 0;
                     padding: 3mm;
@@ -563,7 +570,7 @@ const createThermalReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
                     margin: 2px 0;
                 }
                 .header {
-                    font-size: 12px;
+                    font-size: 17px;
                     font-weight: bold;
                     margin: 8px 0;
                 }
@@ -581,6 +588,8 @@ const createThermalReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
         </head>
         <body>
             <div class="text-center header">Sammana Educational Institute</div>
+            <div class="text-center medium">Sarananda Mawatha, Kalutara.</div>
+            <div class="text-center medium">Tel : 034 2121400</div>
             <div class="text-center header">FEE PAYMENT RECEIPT</div>
             <div class="text-center small">${isFullPayment ? 'FULL PAYMENT' : 'PARTIAL PAYMENT'}</div>
             <div class="text-center">===============================</div>
@@ -588,19 +597,19 @@ const createThermalReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
             
             <div class="row">
                 <div class="text-left"><strong>Student:</strong></div>
-                <div class="text-right">${receiptData.studentName}</div>
+                <div class="text-right bold">${receiptData.studentName}</div>
             </div>
             <div class="row">
                 <div class="text-left"><strong>ID:</strong></div>
-                <div class="text-right">${receiptData.studentId}</div>
+                <div class="text-right bold">${receiptData.studentId}</div>
             </div>
             <div class="row">
                 <div class="text-left"><strong>Class:</strong></div>
-                <div class="text-right">${receiptData.className}</div>
+                <div class="text-right bold">${receiptData.className}</div>
             </div>
             <div class="row">
                 <div class="text-left"><strong>Month:</strong></div>
-                <div class="text-right">${receiptData.month}</div>
+                <div class="text-right bold">${receiptData.month}</div>
             </div>
             
             ${feeBreakdownHTML}
@@ -611,7 +620,7 @@ const createThermalReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
             </div>
             <div class="row">
                 <div class="text-left"><strong>Payment Method:</strong></div>
-                <div class="text-right">${receiptData.paymentMethod}</div>
+                <div class="text-right small">${receiptData.paymentMethod}</div>
             </div>
             <div class="row">
                 <div class="text-left"><strong>TXN ID:</strong></div>
@@ -619,7 +628,7 @@ const createThermalReceiptHTML = (totalAmount, totalFee, isFullPayment, remainin
             </div>
             <div class="row">
                 <div class="text-left"><strong>Date:</strong></div>
-                <div class="text-right">${receiptData.date}</div>
+                <div class="text-right small">${receiptData.date}</div>
             </div>
             
             <div class="double-divider"></div>

@@ -1,7 +1,7 @@
 /* StudentForm.css - Enhanced Professional Design */
 .app-container {
   min-height: 100vh;
-  width:auto;
+  width: auto;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
@@ -471,101 +471,329 @@
   font-size: 1.1rem;
 }
 
-.id-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 20px;
-  padding: 2.5rem;
-  color: white;
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+/* ID Card Styles */
+.id-card-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
-.qr-code-container {
-  text-align: center;
+.id-card-preview {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 30px 0;
 }
 
-.qr-code {
+/* ID Card Side Container */
+.id-card-side {
+  width: 380px;
+  height: 250px;
   background: white;
-  padding: 1.5rem;
+  border: 2px solid #4CAF50;
   border-radius: 12px;
-  display: inline-block;
-  margin-bottom: 1rem;
+  padding: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
 }
 
-.qr-note {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.9rem;
-  margin-top: 1rem;
+.front-side {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fff8 100%);
 }
 
-.student-info h4 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
+.back-side {
+  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+}
+
+/* Front Side Styles */
+.card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #4CAF50;
+  padding-bottom: 10px;
+}
+
+.school-logo {
+  margin-right: 15px;
+}
+
+.logo-circle {
+  width: 50px;
+  height: 50px;
+  background: #4CAF50;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.school-info h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #2E7D32;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.school-tagline {
+  margin: 5px 0 0 0;
+  font-size: 10px;
+  color: #666;
+}
+
+.student-photo-placeholder {
+  position: absolute;
+  top: 85px;
+  right: 20px;
+  width: 90px;
+  height: 110px;
+}
+
+.photo-frame {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #ccc;
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.photo-text {
+  font-size: 12px;
+  color: #999;
   text-align: center;
+  font-weight: bold;
+  transform: rotate(-45deg);
+  text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 2rem;
+.student-details {
+  width: 240px;
+  margin-top: 20px;
 }
 
-.info-item {
+.detail-row {
+  display: flex;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.detail-label {
+  width: 90px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #444;
+  text-transform: uppercase;
+}
+
+.detail-value {
+  flex: 1;
+  font-size: 13px;
+  font-weight: bold;
+  color: #000;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 3px;
+  min-height: 18px;
+}
+
+.detail-value.student-id {
+  background: #f0f0f0;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.detail-value.name {
+  font-size: 16px;
+  color: #2E7D32;
+  border-bottom: 2px solid #4CAF50;
+}
+
+.card-footer {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  right: 15px;
+  border-top: 1px solid #ccc;
+  padding-top: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.signature-label {
+  font-size: 10px;
+  color: #666;
+  font-style: italic;
+}
+
+.card-number {
+  font-size: 11px;
+  font-weight: bold;
+  color: #444;
+}
+
+.front-indicator,
+.back-indicator {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  font-size: 10px;
+  color: #999;
+  font-weight: bold;
+  background: rgba(255,255,255,0.8);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+/* Back Side Styles */
+.qr-section-back {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.info-item strong {
-  font-size: 0.875rem;
-  opacity: 0.8;
-}
-
-.info-item span {
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.action-buttons {
+.qr-container-large {
+  width: 160px;
+  height: 160px;
+  border: 3px solid #000;
+  padding: 5px;
+  background: white;
   display: flex;
-  gap: 1rem;
+  align-items: center;
   justify-content: center;
+  margin: 10px auto;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
 }
 
-.print-btn,
-.new-registration-btn {
-  padding: 0.875rem 1.5rem;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: inherit;
+.qr-image-large {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.back-side-footer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 11px;
+  color: #666;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+  margin-top: 10px;
+}
+
+.website {
+  font-weight: bold;
+}
+
+/* Print Instructions */
+.print-instructions {
+  background: #f8f9fa;
+  border: 2px solid #4CAF50;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 30px auto;
+  max-width: 800px;
+}
+
+.print-instructions h4 {
+  color: #2E7D32;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.print-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.print-instructions li {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.print-instructions li strong {
+  color: #2E7D32;
+}
+
+/* Card Actions */
+.card-actions {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.print-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .print-btn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  backdrop-filter: blur(10px);
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .print-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.both-btn {
+  background: #FF9800;
+  color: white;
+}
+
+.both-btn:hover {
+  background: #e68900;
 }
 
 .new-registration-btn {
-  background: white;
-  color: #4f46e5;
+  background: #6c757d;
+  color: white;
+  padding: 12px 30px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .new-registration-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  background: #5a6268;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 /* Error Result Box */
@@ -582,466 +810,806 @@
   margin-bottom: 0.5rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .form-wrapper {
-    padding: 1.5rem;
-    margin: 1rem;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .progress-steps {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-
-  .step {
-    flex-direction: row;
-    width: 100%;
-    gap: 1rem;
-  }
-
-  .step-connector {
-    display: none;
-  }
-
-  .id-card {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
-
-  .form-navigation {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .nav-btn,
-  .submit-btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-header h2 {
-    font-size: 2rem;
-  }
-
-  .form-wrapper {
-    padding: 1rem;
-  }
-
-  .main-content {
-    padding: 1rem;
-  }
-
-  .subjects-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .id-card {
-    padding: 1.5rem;
-  }
-}
-
-/* Print Styles */
-@media print {
-  .app-container {
-    background: white !important;
-  }
-
-  .form-wrapper {
-    box-shadow: none !important;
-    border: 1px solid #ccc !important;
-  }
-
-  .action-buttons {
-    display: none;
-  }
-}
-
-/* Add these styles to your existing CSS */
-
-.section-description {
-  color: #718096;
-  font-size: 0.95rem;
-  margin-bottom: 1.5rem;
-  font-style: italic;
-}
-
-.optional-badge {
-  background: #e2e8f0;
-  color: #4a5568;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-left: 0.5rem;
-}
-
-/* Remove the required asterisk for guardian fields */
-.form-group:has(#guardianName) label::after,
-.form-group:has(#guardianPhone) label::after,
-.form-group:has(#relationship) label::after {
-  display: none !important;
-}
-
-/* Add to your existing CSS */
-.final-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-}
-
-.skip-notice {
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  color: #0369a1;
-  font-size: 0.875rem;
-  text-align: center;
-  margin-top: 0.5rem;
-}
-
-/* Ensure guardian fields don't show required asterisk */
-.form-group:has(#guardianName) label::after,
-.form-group:has(#guardianPhone) label::after,
-.form-group:has(#relationship) label::after {
-  display: none !important;
-}
+/* ============================================
+   PRINT PREVIEW MODAL - A4 Single Page
+   ============================================ */
 
 /* Print Preview Modal */
 .print-preview-modal {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   backdrop-filter: blur(5px);
 }
 
 .print-preview-content {
   background: white;
   border-radius: 12px;
-  width: 90%;
+  width: 95%;
   max-width: 800px;
-  max-height: 90vh;
+  max-height: 95vh;
   overflow-y: auto;
-  padding: 30px;
+  padding: 25px;
   position: relative;
-}
-
-.print-preview-content .id-card {
-  margin: 0 auto;
-}
-
-.print-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
 }
 
 .close-preview {
   position: absolute;
   top: 15px;
   right: 15px;
-  background: #e53e3e;
+  background: #ff4757;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 20px;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.close-preview:hover {
+  background: #ff3742;
+  transform: scale(1.1);
+}
+
+.print-preview-header {
+  text-align: center;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 3px solid #4CAF50;
+}
+
+.print-preview-header h3 {
+  color: #2E7D32;
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.print-preview-header p {
+  color: #666;
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+.print-controls {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.print-controls button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  min-width: 150px;
+  justify-content: center;
+}
+
+.print-now-btn {
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+  color: white;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.print-now-btn:hover {
+  background: linear-gradient(135deg, #45a049, #1b5e20);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.close-print-btn {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+}
+
+.close-print-btn:hover {
+  background: linear-gradient(135deg, #5a6268, #343a40);
+  transform: translateY(-3px);
+}
+
+.print-preview-body {
+  padding: 20px;
+  border-radius: 10px;
+  background: #f8f9fa;
+}
+
+/* A4 Page Layout */
+.a4-page {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+
+.a4-page-front,
+.a4-page-back {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  background: white;
+  border: 2px solid #4CAF50;
+  border-radius: 12px;
+  padding: 30px;
+  position: relative;
+}
+
+.a4-page-back {
+  border-color: #2196F3;
+}
+
+/* Print ID Card Styles (Preview) */
+.print-id-card {
+  width: 380px;
+  height: 250px;
+  background: white;
+  border: 2px solid #000;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.print-id-card.front-side {
+  padding: 15px;
+  border-color: #4CAF50;
+}
+
+.print-id-card.back-side {
+  padding: 20px;
+  border-color: #2196F3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.print-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #4CAF50;
+  padding-bottom: 10px;
+}
+
+.print-school-logo {
+  margin-right: 15px;
+}
+
+.print-logo-circle {
+  width: 50px;
+  height: 50px;
+  background: #4CAF50;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.print-school-info h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #2E7D32;
+  font-weight: bold;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.print-school-tagline {
+  margin: 5px 0 0 0;
+  font-size: 10px;
+  color: #666;
+}
+
+.print-student-details {
+  width: 240px;
+  margin-top: 20px;
+}
+
+.print-detail-row {
+  display: flex;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.print-detail-label {
+  width: 90px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #444;
+  text-transform: uppercase;
+}
+
+.print-detail-value {
+  flex: 1;
+  font-size: 13px;
+  font-weight: bold;
+  color: #000;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 3px;
+  min-height: 18px;
+}
+
+.print-detail-value.student-id {
+  background: #f0f0f0;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.print-detail-value.name {
   font-size: 16px;
+  color: #2E7D32;
+  border-bottom: 2px solid #4CAF50;
+}
+
+.print-card-footer {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  right: 15px;
+  border-top: 1px solid #ccc;
+  padding-top: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.print-signature-label {
+  font-size: 10px;
+  color: #666;
+  font-style: italic;
+}
+
+.print-card-number {
+  font-size: 11px;
+  font-weight: bold;
+  color: #444;
+}
+
+/* QR Code Section */
+.print-qr-container-large {
+  width: 160px;
+  height: 160px;
+  border: 3px solid #000;
+  padding: 5px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px auto;
+}
+
+.print-qr-image-large {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qr-info {
+  text-align: center;
+  margin: 10px 0;
+}
+
+.qr-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+  color: #2E7D32;
+  font-weight: bold;
+}
+
+.qr-info p {
+  margin: 0;
+  font-size: 11px;
+  color: #666;
+}
+
+.print-back-footer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 11px;
+  color: #666;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+  margin-top: 10px;
+}
+
+.print-website {
+  font-weight: bold;
+}
+
+.print-instruction-note {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #4CAF50;
+  color: white;
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.a4-page-back .print-instruction-note {
+  background: #2196F3;
+}
+
+.printing-instructions {
+  background: white;
+  border: 2px solid #FF9800;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 30px;
+}
+
+.printing-instructions h4 {
+  color: #FF9800;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.printing-instructions ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.printing-instructions li {
+  margin-bottom: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.printing-instructions li strong {
+  color: #2E7D32;
 }
 
 /* ============================================
-   PRINT STYLES FOR ID CARD
+   PRINT PREVIEW MODAL - A4 Single Page
+   ============================================ */
+
+/* Print Preview Modal */
+.print-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.print-preview-content {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 210mm; /* A4 width */
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px;
+  position: relative;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+}
+
+.close-preview {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.close-preview:hover {
+  background: #ff3742;
+  transform: scale(1.1);
+}
+
+.print-preview-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #4CAF50;
+}
+
+.print-preview-header h3 {
+  color: #2E7D32;
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.print-preview-header p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.print-controls {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.print-controls button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.print-now-btn {
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+  color: white;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.print-now-btn:hover {
+  background: linear-gradient(135deg, #45a049, #1b5e20);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.close-print-btn {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+}
+
+.close-print-btn:hover {
+  background: linear-gradient(135deg, #5a6268, #343a40);
+  transform: translateY(-2px);
+}
+
+.print-preview-body {
+  padding: 20px;
+  border-radius: 8px;
+  background: #f8f9fa;
+  margin-top: 15px;
+}
+
+/* A4 Page Layout for Preview */
+.a4-page {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.print-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+}
+
+.front-page, .back-page {
+  background: white;
+  border: 2px dashed #4CAF50;
+  border-radius: 10px;
+  padding: 30px;
+  width: 100%;
+  max-width: 210mm;
+  box-sizing: border-box;
+}
+
+.back-page {
+  border-color: #2196F3;
+}
+
+
+/* ============================================
+   PRINT STYLES - A4 Single Page
    ============================================ */
 
 @media print {
-  /* Hide everything except the ID card */
-  body * {
-    visibility: hidden;
-  }
-  
-  .qr-section,
-  .qr-section * {
-    visibility: visible !important;
-  }
-  
-  .qr-section {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
+  /* Reset everything for printing */
+  * {
     margin: 0;
     padding: 0;
-    background: white !important;
-    box-shadow: none !important;
-    border: none !important;
+    box-sizing: border-box;
   }
   
-  /* Reset the gradient background for printing */
-  .app-container {
-    background: white !important;
-    min-height: auto !important;
+  body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 !important;
     padding: 0 !important;
+    background: white !important;
+    font-family: 'Arial', sans-serif !important;
   }
   
-  .main-content {
-    padding: 0 !important;
-    min-height: auto !important;
+  /* Hide everything except print preview */
+  body > *:not(.print-preview-modal) {
+    display: none !important;
+  }
+  
+  .print-preview-modal {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 10mm !important;
     display: block !important;
-  }
-  
-  .form-wrapper {
+    overflow: visible !important;
     box-shadow: none !important;
-    border: none !important;
     border-radius: 0 !important;
-    padding: 20px !important;
-    margin: 0 auto !important;
-    width: 100% !important;
-    max-width: none !important;
   }
   
-  /* ID Card specific print styles */
-  .id-card {
+  .print-preview-content {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
     background: white !important;
-    color: black !important;
-    border: 2px solid #333 !important;
-    border-radius: 15px !important;
-    padding: 25px !important;
-    display: grid !important;
-    grid-template-columns: 250px 1fr !important;
-    gap: 30px !important;
-    max-width: 800px !important;
-    margin: 0 auto !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+  
+  /* Hide preview controls during print */
+  .print-preview-header,
+  .print-controls,
+  .printing-instructions {
+    display: none !important;
+  }
+  
+  .print-preview-body {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    gap: 30mm !important;
+  }
+  
+  .a4-page {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    gap: 30mm !important;
+    page-break-inside: avoid !important;
+  }
+  
+  .print-page {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
   
-  /* QR Code print styling */
-  .qr-code-container {
-    border-right: 2px solid #ddd !important;
-    padding-right: 20px !important;
-  }
-  
-  .qr-code {
+  .front-page,
+  .back-page {
+    width: 95mm !important;
+    height: 65mm !important;
+    border: 2px dashed #ccc !important;
+    padding: 10mm !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     background: white !important;
-    border: 1px solid #ccc !important;
-    padding: 15px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    position: relative !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   
-  .qr-note {
-    color: black !important;
-    font-weight: 500 !important;
-    font-size: 12px !important;
-    margin-top: 10px !important;
+  /* Ensure each side prints on separate page for double-sided */
+  .back-page {
+    page-break-before: always !important;
   }
   
-  /* Student info styling */
-  .student-info {
-    color: black !important;
+  /* ID Card for printing */
+  .print-id-card {
+    width: 95mm !important;
+    height: 65mm !important;
+    background: white !important;
+    border: 1px solid black !important;
+    box-shadow: none !important;
+    position: relative !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
   }
   
-  .student-info h4 {
-    color: #4f46e5 !important;
-    border-bottom: 2px solid #4f46e5 !important;
-    padding-bottom: 10px !important;
-    margin-bottom: 20px !important;
+  .print-id-card.front-side {
+    padding: 3mm !important;
   }
   
-  .info-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
+  .print-id-card.back-side {
+    padding: 4mm !important;
   }
   
-  .info-item {
-    padding: 8px 0 !important;
-    border-bottom: 1px dotted #ddd !important;
-  }
-  
-  .info-item strong {
-    color: #666 !important;
-    font-size: 12px !important;
-  }
-  
-  .info-item span {
-    color: black !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-  }
-  
-  /* Hide action buttons */
-  .action-buttons,
-  .form-header,
-  .form-navigation,
-  .progress-steps,
-  .success-header,
-  .submit-btn,
-  .nav-btn {
+  /* Print instructions should not print */
+  .print-instruction {
     display: none !important;
   }
   
-  /* Add print-only elements */
-  .id-card::after {
-    content: "Printed on " attr(data-print-date);
-    display: block;
-    text-align: center;
-    font-size: 10px;
-    color: #999;
-    margin-top: 20px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
+  /* Ensure all text is black for printing */
+  .print-school-info h3,
+  .print-detail-label,
+  .print-detail-value,
+  .print-card-number,
+  .qr-info h4,
+  .qr-info p,
+  .print-website,
+  .print-contact {
+    color: black !important;
   }
   
-  /* Ensure QR code prints clearly */
-  svg {
-    max-width: 100% !important;
-    height: auto !important;
+  .print-detail-value.name {
+    color: #000 !important;
+  }
+  
+  /* Ensure QR code prints properly */
+  .print-qr-container-large {
+    border: 1px solid black !important;
+    background: white !important;
+  }
+  
+  .print-qr-image-large {
+    filter: none !important;
+    -webkit-filter: none !important;
   }
 }
 
-/* ID Card specific enhancements for both screen and print */
-.id-card {
-  position: relative;
-  overflow: hidden;
-  min-height: 400px;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .print-preview-modal {
+    padding: 10px;
+  }
+  
+  .print-preview-content {
+    padding: 15px;
+  }
+  
+  .print-id-card {
+    transform: scale(0.8);
+    transform-origin: center;
+  }
+  
+  .print-controls {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .print-controls button {
+    width: 100%;
+    max-width: 250px;
+  }
 }
-
-/* Add a subtle pattern to the ID card */
-.id-card::before {
-  content: "";
-  position: absolute;
+/* Simple Print Preview */
+.simple-print-preview {
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  z-index: 1;
-}
-
-/* School logo/header area */
-.id-card-header {
-  text-align: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-}
-
-.school-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: white;
-  margin: 0;
-}
-
-.school-motto {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-top: 4px;
-}
-
-/* Photo placeholder (if you add student photos later) */
-.student-photo {
-  width: 120px;
-  height: 140px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 15px;
+  z-index: 9999;
 }
 
-.student-photo-placeholder {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-  text-align: center;
-}
-
-/* Student ID Badge */
-.student-id-badge {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 10px;
-  text-align: center;
-  margin-top: 15px;
-}
-
-.student-id-badge span {
-  display: block;
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
-}
-
-/* Additional info styling */
-.additional-info {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 15px;
-  font-size: 12px;
-}
-
-/* Print button styling enhancement */
-.print-btn {
-  position: relative;
-  overflow: hidden;
-}
-
-.print-btn::before {
-  content: "🖨️";
-  margin-right: 8px;
-}
-
-/* Add a print preview modal style */
-.print-preview {
+.preview-content {
   background: white;
-  border: 1px solid #ccc;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  padding: 20px;
-  margin: 20px auto;
-  max-width: 800px;
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
 }
 
-/* Enhanced info grid for better readability */
-.info-grid {
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
+.preview-content h3 {
+  color: #2E7D32;
+  margin-bottom: 15px;
 }
 
-.info-item:nth-child(odd) {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 8px 12px;
-  border-radius: 6px;
+.preview-content p {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
 }
 
+.preview-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.preview-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.retry-print-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+.retry-print-btn:hover {
+  background: #45a049;
+}
+
+.cancel-btn {
+  background: #f44336;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background: #d32f2f;
+}

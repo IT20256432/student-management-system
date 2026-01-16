@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import sammanaLogo from '../../assets/images/sammanalogo.jpg';
 import './Header.css';
 
 const Header = () => {
@@ -99,7 +100,7 @@ const Header = () => {
       const token = localStorage.getItem('token');
       
       if (token) {
-        await fetch('http://localhost:8080/api/auth/logout', {
+        await fetch('https://management.sammanaedu.com/api/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -154,13 +155,34 @@ const Header = () => {
             </button>
 
             <Link to="/dashboard" className="logo">
+              <div className="mobile-header-left">
+            <button 
+              ref={hamburgerRef}
+              className={`hamburger-menu ${isMobileMenuOpen ? 'active' : ''}`}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+
+            <Link to="/dashboard" className="logo">
               <div className="logo-icon">
-                <div className="logo-symbol">🎓</div>
+                <img 
+                  src={sammanaLogo} 
+                  alt="Sammana Educational Institute Logo"
+                  className="brand-logo-img"
+                />
+                <div className="logo-glow"></div>
               </div>
               <div className="logo-text">
                 <h1>Sammana</h1>
                 <span>Educational Institute</span>
               </div>
+            </Link>
+          </div>
             </Link>
           </div>
 

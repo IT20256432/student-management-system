@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { QRCodeSVG as QRCode } from 'qrcode.react';
 import { classAPI } from '../services/api'; 
 import './StudentForm.css';
+import sammanaLogo from '../assets/images/sammanalogo.jpg';
+
 
 function StudentForm() {
   const [formData, setFormData] = useState({
@@ -25,11 +26,13 @@ function StudentForm() {
   const [errors, setErrors] = useState({});
   const [result, setResult] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [generatedQR, setGeneratedQR] = useState(null);
+  const [qrImage, setQrImage] = useState(null);
+  const [qrData, setQrData] = useState(null);
   const [registeredStudent, setRegisteredStudent] = useState(null);
   const [classes, setClasses] = useState([]);
   const [stream, setStream] = useState('Arts');
   const [activeSection, setActiveSection] = useState(0);
+  const [printPreview, setPrintPreview] = useState(false);
   const dateInputRef = useRef(null);
 
   // District options for Sri Lanka
@@ -59,135 +62,210 @@ function StudentForm() {
   }, []);
 
   // Load classes based on selected grade
-useEffect(() => {
-  const fetchClasses = async () => {
-    try {
-      if (formData.grade) {
-        console.log(`🎯 Fetching classes for grade: ${formData.grade}`);
-        
-        // Use the classAPI service instead of direct fetch
-        const classData = await classAPI.getByGrade(formData.grade);
-        
-        console.log(`✅ Loaded ${classData.length} classes for grade ${formData.grade}:`, classData);
-        setClasses(classData);
-      } else {
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        if (formData.grade) {
+          console.log(`🎯 Fetching classes for grade: ${formData.grade}`);
+          
+          // Use the classAPI service instead of direct fetch
+          const classData = await classAPI.getByGrade(formData.grade);
+          
+          console.log(`✅ Loaded ${classData.length} classes for grade ${formData.grade}:`, classData);
+          setClasses(classData);
+        } else {
+          setClasses([]);
+        }
+      } catch (error) {
+        console.error('Error fetching classes:', error);
         setClasses([]);
       }
-    } catch (error) {
-      console.error('Error fetching classes:', error);
-      setClasses([]);
-    }
-  };
-  
-  fetchClasses();
-}, [formData.grade]);
-
-const validateCurrentSection = () => {
-const newErrors = {};
-
-switch (activeSection) {
-  case 0: // Personal Information
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
-    } else if (!/^[A-Za-z\s]+$/.test(formData.firstName)) {
-      newErrors.firstName = 'First name should contain only letters';
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    } else if (!/^[A-Za-z\s]+$/.test(formData.lastName)) {
-      newErrors.lastName = 'Last name should contain only letters';
-    }
-
-    if (!formData.gender) {
-      newErrors.gender = 'Gender is required';
-    }
-
-    if (!formData.dob) {
-      newErrors.dob = 'Date of birth is required';
-    } else {
-      const dob = new Date(formData.dob);
-      const today = new Date();
-      const age = today.getFullYear() - dob.getFullYear();
-      
-      if (age < 5) {
-        newErrors.dob = 'Student must be at least 5 years old';
-      } else if (age > 35) {
-        newErrors.dob = 'Student age seems too high';
-      }
-    }
-    break;
-
-  case 1: // Academic Information
-    // No validation needed as grade has default value
-    break;
-
-  case 2: // Class Section
-    // ✅ FIXED: Use newErrors instead of sectionErrors
-    if (!formData.schoolClass) {
-      newErrors.schoolClass = 'Class assignment is required';
-    }
-    break;
-
-  case 3: // Contact Information
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.phone) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^(\+94|0)[1-9][0-9]{8}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Please enter a valid Sri Lankan phone number';
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
-    }
-
-    if (!formData.city.trim()) {
-      newErrors.city = 'City is required';
-    }
-
-    if (!formData.district) {
-      newErrors.district = 'District is required';
-    }
-    break;
-
-  case 4: // Guardian Information
-    // Guardian validation - ONLY validate if at least one field is filled
-    const hasGuardianInfo = formData.guardianName || formData.guardianPhone;
+    };
     
-    if (hasGuardianInfo) {
-      // If guardian name is provided but phone is missing
-      if (formData.guardianName && !formData.guardianPhone) {
-        newErrors.guardianPhone = 'Guardian phone is required when guardian name is provided';
-      }
-      
-      // If guardian phone is provided but name is missing
-      if (formData.guardianPhone && !formData.guardianName) {
-        newErrors.guardianName = 'Guardian name is required when guardian phone is provided';
-      }
+    fetchClasses();
+  }, [formData.grade]);
 
-      // Validate guardian phone format if provided
-      if (formData.guardianPhone && !/^(\+94|0)[1-9][0-9]{8}$/.test(formData.guardianPhone.replace(/\s/g, ''))) {
-        newErrors.guardianPhone = 'Please enter a valid Sri Lankan phone number';
-      }
-    }
-    break;
 
-  default:
-    break;
-}
-
-return newErrors; // ✅ Don't forget to return newErrors
+  const handleDirectPrint = () => {
+  const printWindow = window.open('', '_blank');
+  
+  const printHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Student ID Card - ${formData.firstName} ${formData.lastName}</title>
+      <style>
+        @page {
+          size: A4;
+          margin: 20mm;
+        }
+        
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: 'Arial', sans-serif;
+          background: white;
+          width: 210mm;
+          height: 297mm;
+        }
+        
+        .print-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          gap: 50mm;
+        }
+        
+        .id-card-page {
+          width: 95mm;
+          height: 65mm;
+          border: 1px solid #000;
+          position: relative;
+          page-break-inside: avoid;
+        }
+        
+        .front-side {
+          padding: 3mm;
+        }
+        
+        .back-side {
+          padding: 4mm;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* Add all the print styles from above here */
+      </style>
+    </head>
+    <body>
+      <div class="print-container">
+        <div class="id-card-page front-side">
+          <!-- Front side content -->
+        </div>
+        <div class="id-card-page back-side">
+          <!-- Back side content -->
+        </div>
+      </div>
+      <script>
+        window.onload = function() {
+          window.print();
+          setTimeout(function() {
+            window.close();
+          }, 500);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+  
+  printWindow.document.write(printHtml);
+  printWindow.document.close();
 };
+
+  const validateCurrentSection = () => {
+    const newErrors = {};
+
+    switch (activeSection) {
+      case 0: // Personal Information
+        if (!formData.firstName.trim()) {
+          newErrors.firstName = 'First name is required';
+        } else if (!/^[A-Za-z\s]+$/.test(formData.firstName)) {
+          newErrors.firstName = 'First name should contain only letters';
+        }
+
+        if (!formData.lastName.trim()) {
+          newErrors.lastName = 'Last name is required';
+        } else if (!/^[A-Za-z\s]+$/.test(formData.lastName)) {
+          newErrors.lastName = 'Last name should contain only letters';
+        }
+
+        if (!formData.gender) {
+          newErrors.gender = 'Gender is required';
+        }
+
+        if (!formData.dob) {
+          newErrors.dob = 'Date of birth is required';
+        } else {
+          const dob = new Date(formData.dob);
+          const today = new Date();
+          const age = today.getFullYear() - dob.getFullYear();
+          
+          if (age < 5) {
+            newErrors.dob = 'Student must be at least 5 years old';
+          } else if (age > 35) {
+            newErrors.dob = 'Student age seems too high';
+          }
+        }
+        break;
+
+      case 1: // Academic Information
+        // No validation needed as grade has default value
+        break;
+
+      case 2: // Class Section
+        if (!formData.schoolClass) {
+          newErrors.schoolClass = 'Class assignment is required';
+        }
+        break;
+
+      case 3: // Contact Information
+        if (!formData.email) {
+          newErrors.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+          newErrors.email = 'Please enter a valid email address';
+        }
+
+        if (!formData.phone) {
+          newErrors.phone = 'Phone number is required';
+        } else if (!/^(\+94|0)[1-9][0-9]{8}$/.test(formData.phone.replace(/\s/g, ''))) {
+          newErrors.phone = 'Please enter a valid Sri Lankan phone number';
+        }
+
+        if (!formData.address.trim()) {
+          newErrors.address = 'Address is required';
+        }
+
+        if (!formData.city.trim()) {
+          newErrors.city = 'City is required';
+        }
+
+        if (!formData.district) {
+          newErrors.district = 'District is required';
+        }
+        break;
+
+      case 4: // Guardian Information
+        const hasGuardianInfo = formData.guardianName || formData.guardianPhone;
+        
+        if (hasGuardianInfo) {
+          if (formData.guardianName && !formData.guardianPhone) {
+            newErrors.guardianPhone = 'Guardian phone is required when guardian name is provided';
+          }
+          
+          if (formData.guardianPhone && !formData.guardianName) {
+            newErrors.guardianName = 'Guardian name is required when guardian phone is provided';
+          }
+
+          if (formData.guardianPhone && !/^(\+94|0)[1-9][0-9]{8}$/.test(formData.guardianPhone.replace(/\s/g, ''))) {
+            newErrors.guardianPhone = 'Please enter a valid Sri Lankan phone number';
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    return newErrors;
+  };
 
   const validateAllSections = () => {
     const allErrors = {};
     
-    // Validate each section
     for (let i = 0; i < sections.length; i++) {
       const sectionErrors = validateSection(i);
       Object.assign(allErrors, sectionErrors);
@@ -197,101 +275,100 @@ return newErrors; // ✅ Don't forget to return newErrors
   };
 
   const validateSection = (sectionIndex) => {
-  const sectionErrors = {};
+    const sectionErrors = {};
 
-  switch (sectionIndex) {
-    case 0: // Personal Information
-      if (!formData.firstName.trim()) {
-        sectionErrors.firstName = 'First name is required';
-      } else if (!/^[A-Za-z\s]+$/.test(formData.firstName)) {
-        sectionErrors.firstName = 'First name should contain only letters';
-      }
+    switch (sectionIndex) {
+      case 0: // Personal Information
+        if (!formData.firstName.trim()) {
+          sectionErrors.firstName = 'First name is required';
+        } else if (!/^[A-Za-z\s]+$/.test(formData.firstName)) {
+          sectionErrors.firstName = 'First name should contain only letters';
+        }
 
-      if (!formData.lastName.trim()) {
-        sectionErrors.lastName = 'Last name is required';
-      } else if (!/^[A-Za-z\s]+$/.test(formData.lastName)) {
-        sectionErrors.lastName = 'Last name should contain only letters';
-      }
+        if (!formData.lastName.trim()) {
+          sectionErrors.lastName = 'Last name is required';
+        } else if (!/^[A-Za-z\s]+$/.test(formData.lastName)) {
+          sectionErrors.lastName = 'Last name should contain only letters';
+        }
 
-      if (!formData.gender) {
-        sectionErrors.gender = 'Gender is required';
-      }
+        if (!formData.gender) {
+          sectionErrors.gender = 'Gender is required';
+        }
 
-      if (!formData.dob) {
-        sectionErrors.dob = 'Date of birth is required';
-      } else {
-        const dob = new Date(formData.dob);
-        const today = new Date();
-        const age = today.getFullYear() - dob.getFullYear();
+        if (!formData.dob) {
+          sectionErrors.dob = 'Date of birth is required';
+        } else {
+          const dob = new Date(formData.dob);
+          const today = new Date();
+          const age = today.getFullYear() - dob.getFullYear();
+          
+          if (age < 5) {
+            sectionErrors.dob = 'Student must be at least 5 years old';
+          } else if (age > 25) {
+            sectionErrors.dob = 'Student age seems too high';
+          }
+        }
+        break;
+
+      case 1: // Academic Information
+        break;
+
+      case 2: // Class Section
+        if (!formData.schoolClass) {
+          sectionErrors.schoolClass = 'Class assignment is required';
+        }
+        break;
+
+      case 3: // Contact Information
+        if (!formData.email) {
+          sectionErrors.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+          sectionErrors.email = 'Please enter a valid email address';
+        }
+
+        if (!formData.phone) {
+          sectionErrors.phone = 'Phone number is required';
+        } else if (!/^(\+94|0)[1-9][0-9]{8}$/.test(formData.phone.replace(/\s/g, ''))) {
+          sectionErrors.phone = 'Please enter a valid Sri Lankan phone number';
+        }
+
+        if (!formData.address.trim()) {
+          sectionErrors.address = 'Address is required';
+        }
+
+        if (!formData.city.trim()) {
+          sectionErrors.city = 'City is required';
+        }
+
+        if (!formData.district) {
+          sectionErrors.district = 'District is required';
+        }
+        break;
+
+      case 4: // Guardian Information
+        const hasGuardianInfo = formData.guardianName || formData.guardianPhone;
         
-        if (age < 5) {
-          sectionErrors.dob = 'Student must be at least 5 years old';
-        } else if (age > 25) {
-          sectionErrors.dob = 'Student age seems too high';
+        if (hasGuardianInfo) {
+          if (formData.guardianName && !formData.guardianPhone) {
+            sectionErrors.guardianPhone = 'Guardian phone is required when guardian name is provided';
+          }
+          
+          if (formData.guardianPhone && !formData.guardianName) {
+            sectionErrors.guardianName = 'Guardian name is required when guardian phone is provided';
+          }
+
+          if (formData.guardianPhone && !/^(\+94|0)[1-9][0-9]{8}$/.test(formData.guardianPhone.replace(/\s/g, ''))) {
+            sectionErrors.guardianPhone = 'Please enter a valid Sri Lankan phone number';
+          }
         }
-      }
-      break;
+        break;
 
-    case 1: // Academic Information - No validation needed
-      break;
+      default:
+        break;
+    }
 
-    case 2: // Class Section - ✅ ADD THIS
-      if (!formData.schoolClass) {
-        sectionErrors.schoolClass = 'Class assignment is required';
-      }
-      break;
-
-    case 3: // Contact Information
-      if (!formData.email) {
-        sectionErrors.email = 'Email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        sectionErrors.email = 'Please enter a valid email address';
-      }
-
-      if (!formData.phone) {
-        sectionErrors.phone = 'Phone number is required';
-      } else if (!/^(\+94|0)[1-9][0-9]{8}$/.test(formData.phone.replace(/\s/g, ''))) {
-        sectionErrors.phone = 'Please enter a valid Sri Lankan phone number';
-      }
-
-      if (!formData.address.trim()) {
-        sectionErrors.address = 'Address is required';
-      }
-
-      if (!formData.city.trim()) {
-        sectionErrors.city = 'City is required';
-      }
-
-      if (!formData.district) {
-        sectionErrors.district = 'District is required';
-      }
-      break;
-
-    case 4: // Guardian Information - Optional, no validation needed for empty fields
-      const hasGuardianInfo = formData.guardianName || formData.guardianPhone;
-      
-      if (hasGuardianInfo) {
-        if (formData.guardianName && !formData.guardianPhone) {
-          sectionErrors.guardianPhone = 'Guardian phone is required when guardian name is provided';
-        }
-        
-        if (formData.guardianPhone && !formData.guardianName) {
-          sectionErrors.guardianName = 'Guardian name is required when guardian phone is provided';
-        }
-
-        if (formData.guardianPhone && !/^(\+94|0)[1-9][0-9]{8}$/.test(formData.guardianPhone.replace(/\s/g, ''))) {
-          sectionErrors.guardianPhone = 'Please enter a valid Sri Lankan phone number';
-        }
-      }
-      break;
-
-    default:
-      break;
-  }
-
-  return sectionErrors;
-};
-  
+    return sectionErrors;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -354,116 +431,742 @@ return newErrors; // ✅ Don't forget to return newErrors
     }
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  // Validate all sections before submission
-  const allErrors = validateAllSections();
-  
-  if (Object.keys(allErrors).length > 0) {
-    setErrors(allErrors);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // Find the first section that has errors and navigate to it
-    for (let i = 0; i < sections.length; i++) {
-      const sectionErrors = validateSection(i);
-      if (Object.keys(sectionErrors).length > 0) {
-        setActiveSection(i);
-        
-        // Scroll to the first error in that section
-        setTimeout(() => {
-          const firstError = Object.keys(sectionErrors)[0];
-          if (firstError) {
-            const errorElement = document.querySelector(`[name="${firstError}"]`);
-            if (errorElement) {
-              errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              errorElement.focus();
+    const allErrors = validateAllSections();
+    
+    if (Object.keys(allErrors).length > 0) {
+      setErrors(allErrors);
+      
+      for (let i = 0; i < sections.length; i++) {
+        const sectionErrors = validateSection(i);
+        if (Object.keys(sectionErrors).length > 0) {
+          setActiveSection(i);
+          
+          setTimeout(() => {
+            const firstError = Object.keys(sectionErrors)[0];
+            if (firstError) {
+              const errorElement = document.querySelector(`[name="${firstError}"]`);
+              if (errorElement) {
+                errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                errorElement.focus();
+              }
             }
-          }
-        }, 100);
-        return;
+          }, 100);
+          return;
+        }
       }
+      return;
     }
+
+    setIsSubmitting(true);
+    try {
+      const submissionData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        gender: formData.gender,
+        dob: formData.dob,
+        grade: formData.grade,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        district: formData.district,
+        status: formData.status,
+        classId: formData.schoolClass?.id || null
+      };
+
+      if (formData.guardianName.trim()) {
+        submissionData.guardianName = formData.guardianName.trim();
+      }
+      if (formData.guardianPhone.trim()) {
+        submissionData.guardianPhone = formData.guardianPhone.trim();
+      }
+      if (formData.relationship) {
+        submissionData.relationship = formData.relationship;
+      }
+
+      console.log('📤 Sending to LOCAL backend:', submissionData);
+
+      // Use localhost with register-direct endpoint
+      const response = await fetch('http://localhost:8080/api/students/register-direct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submissionData)
+      });
+      
+      const data = await response.json();
+      console.log('✅ Local backend response:', data);
+      
+      if (response.ok && data.success) {
+        // Backend returns the QR image and data
+        setQrImage(data.qrImage);
+        setQrData(data.qrData);
+        setRegisteredStudent({
+          studentId: data.studentId,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          grade: data.grade,
+          classId: data.classId,
+          className: data.className
+        });
+        
+        console.log('✅ QR received from backend:', data.qrImage ? 'Yes' : 'No');
+        console.log('✅ Student ID:', data.studentId);
+        
+        // Show success message
+        setResult({ 
+          success: true, 
+          message: 'Student registered successfully! QR code has been emailed.' 
+        });
+      } else {
+        // Handle error response from backend
+        throw new Error(data.error || data.message || 'Registration failed');
+      }
+    } catch (err) {
+      console.error('❌ Registration error:', err);
+      console.error('❌ Full error:', err);
+      
+      let errorMessage = err.message || 'Registration failed. Please try again.';
+      
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        errorMessage = 'Cannot connect to backend server. Make sure the backend is running on http://localhost:8080';
+      }
+      
+      setResult({ 
+        error: true, 
+        message: errorMessage 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+const handlePrint = () => {
+  // Create a new window for printing
+  const printWindow = window.open('', '_blank', 'width=900,height=600');
+  
+  if (!printWindow) {
+    alert('Please allow popups for this site to print');
     return;
   }
 
-  setIsSubmitting(true);
-  try {
-    // ✅ SIMPLE APPROACH: Send classId as separate field (not nested object)
-    const submissionData = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      gender: formData.gender,
-      dob: formData.dob,
-      grade: formData.grade,
-      email: formData.email,
-      phone: formData.phone,
-      address: formData.address,
-      city: formData.city,
-      district: formData.district,
-      status: formData.status,
-      // ✅ Send classId directly (NOT as nested schoolClass object)
-      classId: formData.schoolClass?.id || null
-    };
+   const schoolLogoUrl = sammanaLogo;
 
-    // Only add guardian fields if they have values
-    if (formData.guardianName.trim()) {
-      submissionData.guardianName = formData.guardianName.trim();
-    }
-    if (formData.guardianPhone.trim()) {
-      submissionData.guardianPhone = formData.guardianPhone.trim();
-    }
-    if (formData.relationship) {
-      submissionData.relationship = formData.relationship;
-    }
-
-    console.log('📤 Sending to SIMPLE endpoint:', submissionData);
-    console.log('📋 School Class ID:', formData.schoolClass?.id);
-
-    // ✅ USE THE SIMPLE ENDPOINT
-    const response = await fetch('https://management.sammanaedu.com/api/students/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(submissionData)
-    });
-    
-    const data = await response.json();
-    console.log('✅ Registration response:', data);
-    
-    if (response.ok) {
-      const qrData = JSON.stringify({
-        studentId: data.studentId,
-        firstName: data.firstName || formData.firstName,
-        lastName: data.lastName || formData.lastName,
-        grade: data.grade || formData.grade,
-        email: data.email || formData.email,
-        classId: data.classId || formData.schoolClass?.id,
-        className: data.className || formData.schoolClass?.className
-      });
-      setGeneratedQR(qrData);
-      setRegisteredStudent(data);
-    } else {
-      throw new Error(data.error || 'Registration failed');
-    }
-  } catch (err) {
-    console.error('❌ Registration error:', err);
-    setResult({ error: err.message });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-const handlePrint = () => {
-  // Set print date attribute
-  const idCard = document.querySelector('.id-card');
-  if (idCard) {
-    idCard.setAttribute('data-print-date', new Date().toLocaleDateString());
-  }
   
-  // Add a delay to ensure styles are applied
-  setTimeout(() => {
-    window.print();
-  }, 100);
+  const frontSideHtml = `
+    <div class="print-id-card front-side">
+      <div class="print-card-header">
+        <div class="print-school-logo">
+          <img src="${schoolLogoUrl}" alt="Sammana Educational Institute" class="school-logo-img" />
+        </div>
+        <div class="print-school-info">
+          <h3>SAMMANA EDUCATIONAL INSTITUTE</h3>
+          <p class="print-school-tagline">Sarananda Mawatha, Kalutara </p>
+          <p class="print-school-tagline">Knowledge • Excellence • Success</p>
+        </div>
+      </div>
+             
+      <div class="print-student-details">
+        <div class="print-detail-row">
+          <div class="print-detail-label">STUDENT ID</div>
+          <div class="print-detail-value student-id">${registeredStudent?.studentId}</div>
+        </div>
+        
+        <div class="print-detail-row">
+          <div class="print-detail-label">FULL NAME</div>
+          <div class="print-detail-value name">${formData.firstName} ${formData.lastName}</div>
+        </div>
+        
+        <div class="print-detail-row">
+          <div class="print-detail-label">GRADE</div>
+          <div class="print-detail-value grade">${formData.grade}</div>
+        </div>
+        
+        ${formData.grade === 'A/L' && stream ? `
+          <div class="print-detail-row">
+            <div class="print-detail-label">STREAM</div>
+            <div class="print-detail-value stream">${stream}</div>
+          </div>
+        ` : ''}
+        
+        <div class="print-detail-row">
+          <div class="print-detail-label">DATE OF BIRTH</div>
+          <div class="print-detail-value dob">
+            ${new Date(formData.dob).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            })}
+          </div>
+        </div>
+      </div>
+      
+      <div class="print-card-footer">
+        <div class="print-signature-line">
+          <div class="print-signature-label">AUTHORIZED SIGNATURE</div>
+        </div>
+        <div class="print-card-number">ID: ${registeredStudent?.studentId}</div>
+      </div>
+      <div class="cut-line">CUT</div>
+    </div>
+  `;
+  
+  const backSideHtml = `
+    <div class="print-id-card back-side">
+      <div class="print-qr-container-large">
+        <img src="${qrImage}" alt="Student QR Code" class="print-qr-image-large" />
+      </div>
+      
+      <div class="cut-line">CUT</div>
+    </div>
+  `;
+  
+  const printHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Student ID Card - ${formData.firstName} ${formData.lastName}</title>
+      <style>
+        /* Reset for printing */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: 'Arial', sans-serif;
+          background: white;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        
+        /* LANDSCAPE A4 layout with safe margins */
+        @page {
+          size: A4 landscape;
+          margin: 15mm; /* Safe margin for all printers */
+        }
+        
+        @media print {
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 297mm;  /* Landscape width */
+            height: 210mm; /* Landscape height */
+          }
+          
+          /* Center content properly */
+          .print-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+          }
+          
+          /* Remove all headers and footers */
+          @page {
+            margin: 15mm;
+            size: A4 landscape;
+          }
+          
+          /* Hide URL, date, page numbers */
+          @page {
+            @top-left { content: none; }
+            @top-center { content: none; }
+            @top-right { content: none; }
+            @bottom-left { content: none; }
+            @bottom-center { content: none; }
+            @bottom-right { content: none; }
+          }
+          
+          /* No page breaks */
+          .print-container, .cards-row, .id-card-wrapper, .print-id-card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: avoid !important;
+            page-break-before: avoid !important;
+          }
+          
+          /* Force single page */
+          html, body {
+            height: 100% !important;
+            width: 100% !important;
+            overflow: hidden !important;
+          }
+        }
+
+        /* School logo image styles */
+        .school-logo-img {
+          width: 15mm;
+          height: 15mm;
+          object-fit: contain;
+          display: block;
+        }
+        
+        /* Print school logo container */
+        .print-school-logo {
+          margin-right: 3mm;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* Main container - centered in landscape */
+        .print-container {
+          width: 267mm; /* 297mm - 30mm margins (15mm each side) */
+          height: 180mm; /* 210mm - 30mm margins (15mm each side) */
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: white;
+          margin: 0 auto;
+        }
+        
+        /* Two ID cards side by side - PROPERLY CENTERED */
+        .cards-row {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 25mm; /* Space between cards */
+          width: 100%;
+          height: 75mm;
+          margin: 10mm 0;
+        }
+        
+        /* Each ID card wrapper */
+        .id-card-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 3mm;
+        }
+        
+        /* Instruction text */
+        .print-instruction {
+          font-size: 9px;
+          color: #000000;
+          text-align: center;
+          margin-top: 5px;
+          font-weight: bold;
+          padding: 3px 8px;
+          border: 1px dashed #000000;
+          border-radius: 3px;
+          background: #f9f9f9;
+          width: 95mm;
+        }
+        
+        /* Cut line indicator */
+        .cut-line {
+          position: absolute;
+          bottom: -12px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 8px;
+          color: #ff0000;
+          font-weight: bold;
+          padding: 2px 6px;
+          border: 1px dashed red;
+          border-radius: 2px;
+          background: #fff0f0;
+          white-space: nowrap;
+        }
+        
+        /* Actual ID card */
+        .print-id-card {
+          width: 95mm;
+          height: 65mm;
+          background: white;
+          border: 1px solid #000;
+          position: relative;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        
+        .print-id-card.front-side {
+          padding: 3mm;
+        }
+        
+        /* Front side styles */
+        .print-card-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 2mm;
+          border-bottom: 1px solid #000000;
+          padding-bottom: 2mm;
+        }
+        
+        .print-school-logo {
+          margin-right: 3mm;
+        }
+        
+        .print-logo-circle {
+          width: 15mm;
+          height: 15mm;
+          background: #000000;
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 5mm;
+        }
+        
+        .print-school-info h3 {
+          margin: 0;
+          font-size: 4mm;
+          color: #000000;
+          font-weight: bold;
+          line-height: 1.2;
+          text-transform: uppercase;
+        }
+        
+        .print-school-tagline {
+          margin: 1mm 0 0 0;
+          font-size: 2.5mm;
+          color: #170b0b;
+        }
+        
+        .print-student-details {
+          width: 60mm;
+          margin-top: 5mm;
+        }
+        
+        .print-detail-row {
+          display: flex;
+          margin-bottom: 1.5mm;
+          align-items: center;
+        }
+        
+        .print-detail-label {
+          width: 25mm;
+          font-size: 2.8mm;
+          font-weight: bold;
+          color: #000000;
+          text-transform: uppercase;
+        }
+        
+        .print-detail-value {
+          flex: 1;
+          font-size: 3.2mm;
+          font-weight: bold;
+          color: #000;
+          border-bottom: 1px solid #eee;
+          padding-bottom: 0.5mm;
+          min-height: 4mm;
+        }
+        
+        .print-detail-value.student-id {
+          background: #f0f0f0;
+          padding: 1mm;
+          border-radius: 1mm;
+          border: 1px solid #ccc;
+          font-family: 'Courier New', monospace;
+          font-size: 3.5mm;
+        }
+        
+        .print-detail-value.name {
+          font-size: 3.5mm;
+          color: #000000;
+          border-bottom: 1px solid #000000;
+        }
+        
+        .print-card-footer {
+          position: absolute;
+          bottom: 3mm;
+          left: 3mm;
+          right: 3mm;
+          border-top: 1px solid #ccc;
+          padding-top: 1mm;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .print-signature-label {
+          font-size: 2.5mm;
+          color: #161313;
+          font-style: italic;
+        }
+        
+        .print-card-number {
+          font-size: 2.8mm;
+          font-weight: bold;
+          color: #2a2626;
+        }
+        
+        /* Back side styles */
+        .print-id-card.back-side {
+          padding: 4mm;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .print-qr-container-large {
+          width: 50mm;
+          height: 50mm;
+          border: 1px solid #000;
+          padding: 1mm;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 2mm;
+        }
+        
+        .print-qr-image-large {
+          width: 130%;
+          height: 130%;
+          object-fit: contain;
+        }
+        
+        .qr-info {
+          text-align: center;
+          margin: 2mm 0;
+        }
+        
+        .qr-info h4 {
+          margin: 0 0 1mm 0;
+          font-size: 3.5mm;
+          color: #000000;
+          font-weight: bold;
+        }
+        
+        .qr-info p {
+          margin: 0;
+          font-size: 2.5mm;
+          color: #000000;
+        }
+        
+        .print-back-footer {
+          display: flex;
+          justify-content: space-between;
+          width: 100%;
+          font-size: 2.5mm;
+          color: #000000;
+          border-top: 1px solid #eee;
+          padding-top: 1mm;
+          margin-top: 2mm;
+        }
+        
+        .print-website {
+          font-weight: bold;
+        }
+        
+        /* Instructions panel */
+        .instructions-panel {
+          width: 240mm;
+          padding: 4mm;
+          background: #f9f9f9;
+          border: 1px solid #000000;
+          border-radius: 2mm;
+          margin-top: 5mm;
+        }
+        
+        .instructions-panel h4 {
+          color: #2E7D32;
+          margin-bottom: 3mm;
+          text-align: center;
+          font-size: 12px;
+        }
+        
+        .instructions-panel ol {
+          margin: 0;
+          padding-left: 20px;
+          font-size: 10px;
+        }
+        
+        .instructions-panel li {
+          margin-bottom: 1mm;
+          line-height: 1.4;
+        }
+        
+        .instructions-panel strong {
+          color: #041205;
+        }
+        
+        /* Print controls (visible only in preview) */
+        .print-controls {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: white;
+          padding: 15px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          z-index: 1000;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .print-controls button {
+          margin: 5px;
+          padding: 8px 15px;
+          background: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: bold;
+          display: block;
+          width: 100%;
+        }
+        
+        .print-controls button:hover {
+          background: #45a049;
+        }
+        
+        /* Hide instructions and controls during print */
+        @media print {
+          .print-controls,
+          .instructions-panel {
+            display: none !important;
+          }
+        }
+        
+        /* Preview mode styles */
+        @media screen {
+          body {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+          }
+          
+          .print-container {
+            background: white;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+          }
+          
+          /* Show safe area for printing */
+          .print-container::before {
+            content: "SAFE PRINT AREA";
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4CAF50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-container">
+        <div class="cards-row">
+          <!-- Front Side -->
+          <div class="id-card-wrapper">
+            <div class="print-id-card front-side">
+              ${frontSideHtml}
+            </div>
+            <div class="print-instruction">FRONT SIDE (Left)</div>
+          </div>
+          
+          <!-- Back Side -->
+          <div class="id-card-wrapper">
+            <div class="print-id-card back-side">
+              ${backSideHtml}
+            </div>
+            <div class="print-instruction">BACK SIDE (Right)</div>
+          </div>
+        </div>
+        
+        <div class="instructions-panel">
+          <h4>📋 PRINTING INSTRUCTIONS - SINGLE A4 PAGE (LANDSCAPE)</h4>
+          <ol>
+            <li><strong>SET PRINTER TO LANDSCAPE</strong> in print settings</li>
+            <li><strong>PRINT THIS PAGE</strong> on one side of A4 paper</li>
+            <li>Take printed paper and <strong>FLIP VERTICALLY</strong> (long edge)</li>
+            <li><strong>PRINT SAME PAGE AGAIN</strong> on reverse side</li>
+            <li><strong>CUT</strong> along dashed red lines around each ID card</li>
+            <li><strong>MATCH FRONT & BACK</strong> to create double-sided card</li>
+            <li><strong>LAMINATE</strong> for professional finish</li>
+          </ol>
+        </div>
+      </div>
+      
+      <div class="print-controls">
+        <button onclick="window.print()">🖨️ Print Now</button>
+        <button onclick="window.close()">✖️ Close Window</button>
+        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+          <p><strong>Check printer settings:</strong></p>
+          <p>• Paper: A4</p>
+          <p>• Orientation: Landscape</p>
+          <p>• Scale: 100%</p>
+          <p>• Margins: Default</p>
+        </div>
+      </div>
+      
+      <script>
+        // Disable browser headers and footers
+        window.onbeforeprint = function() {
+          // Add styles to remove headers/footers
+          var style = document.createElement('style');
+          style.innerHTML = '
+            @page { 
+              size: A4 landscape; 
+              margin: 15mm; 
+              marks: none; 
+            }
+            @page :footer { display: none; }
+            @page :header { display: none; }
+          ';
+          document.head.appendChild(style);
+        };
+        
+        // Auto-print after a short delay
+        setTimeout(function() {
+          window.print();
+        }, 500);
+        
+        // Close window after printing
+        window.onafterprint = function() {
+          setTimeout(function() {
+            window.close();
+          }, 1000);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+  
+  printWindow.document.write(printHtml);
+  printWindow.document.close();
 };
+
+const closePrintPreview = () => {
+  setPrintPreview(false);
+};
+
+// Add this useEffect to handle afterprint event
+useEffect(() => {
+  const handleAfterPrint = () => {
+    console.log('Printing completed or cancelled');
+  };
+
+  window.addEventListener('afterprint', handleAfterPrint);
+  
+  return () => {
+    window.removeEventListener('afterprint', handleAfterPrint);
+  };
+}, []);
 
   const resetForm = () => {
     setFormData({
@@ -483,12 +1186,14 @@ const handlePrint = () => {
       status: 'Active',
       schoolClass: null
     });
-    setGeneratedQR(null);
+    setQrImage(null);
+    setQrData(null);
     setRegisteredStudent(null);
     setResult(null);
     setStream('Arts');
     setClasses([]);
     setActiveSection(0);
+    setPrintPreview(false);
   };
 
   const nextSection = () => {
@@ -497,7 +1202,6 @@ const handlePrint = () => {
     if (Object.keys(currentSectionErrors).length > 0) {
       setErrors(prev => ({ ...prev, ...currentSectionErrors }));
       
-      // Scroll to first error in current section
       const firstError = Object.keys(currentSectionErrors)[0];
       if (firstError) {
         const errorElement = document.querySelector(`[name="${firstError}"]`);
@@ -516,7 +1220,6 @@ const handlePrint = () => {
     setActiveSection(prev => Math.max(prev - 1, 0));
   };
 
-  // Check if all required sections are filled
   const isFormComplete = () => {
     const requiredErrors = validateAllSections();
     return Object.keys(requiredErrors).length === 0;
@@ -532,7 +1235,7 @@ const handlePrint = () => {
             <p>Complete all fields to register a new student in the system</p>
           </div>
 
-          {!generatedQR ? (
+          {!qrImage ? (
             <form onSubmit={handleSubmit} className="modern-form">
               {/* Progress Steps */}
               <div className="progress-steps">
@@ -672,46 +1375,46 @@ const handlePrint = () => {
                 </div>
               )}
 
-                          {/* Class Section */}
-            {activeSection === 2 && (
-              <div className="form-section active">
-                <h3>Class Assignment <span className="required-badge">Required</span></h3>
-                <div className="section-description">
-                  Assign the student to a specific class. This is required for attendance and fee management.
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="classAssignment">Select Class *</label>
-                  <select
-                    id="classAssignment"
-                    name="classAssignment"
-                    value={formData.schoolClass?.id || ''}
-                    onChange={handleClassChange}
-                    className={errors.schoolClass ? 'error' : ''}
-                    required
-                  >
-                    <option value="">Choose a class *</option>
-                    {classes.map(cls => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.className} - {cls.classTeacher} ({cls.roomNumber})
-                      </option>
-                    ))}
-                  </select>
-                  {errors.schoolClass && <span className="error-message">{errors.schoolClass}</span>}
+              {/* Class Section */}
+              {activeSection === 2 && (
+                <div className="form-section active">
+                  <h3>Class Assignment <span className="required-badge">Required</span></h3>
+                  <div className="section-description">
+                    Assign the student to a specific class. This is required for attendance and fee management.
+                  </div>
                   
-                  {formData.schoolClass && (
-                    <div className="class-selection-info">
-                      <div className="class-info-card">
-                        <strong>Selected Class:</strong> {formData.schoolClass.className}
-                        <br />
-                        <strong>Teacher:</strong> {formData.schoolClass.classTeacher}
-                        <br />
-                        <strong>Room:</strong> {formData.schoolClass.roomNumber}
+                  <div className="form-group">
+                    <label htmlFor="classAssignment">Select Class *</label>
+                    <select
+                      id="classAssignment"
+                      name="classAssignment"
+                      value={formData.schoolClass?.id || ''}
+                      onChange={handleClassChange}
+                      className={errors.schoolClass ? 'error' : ''}
+                      required
+                    >
+                      <option value="">Choose a class *</option>
+                      {classes.map(cls => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.className} - {cls.classTeacher} ({cls.roomNumber})
+                        </option>
+                      ))}
+                    </select>
+                    {errors.schoolClass && <span className="error-message">{errors.schoolClass}</span>}
+                    
+                    {formData.schoolClass && (
+                      <div className="class-selection-info">
+                        <div className="class-info-card">
+                          <strong>Selected Class:</strong> {formData.schoolClass.className}
+                          <br />
+                          <strong>Teacher:</strong> {formData.schoolClass.classTeacher}
+                          <br />
+                          <strong>Room:</strong> {formData.schoolClass.roomNumber}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Contact Information Section */}
@@ -888,88 +1591,160 @@ const handlePrint = () => {
               </div>
             </form>
           ) : (
-            // QR Code Display Section
+            // Success Section with ID Card Display
             <div className="qr-section">
               <div className="success-header">
                 <div className="success-icon">✅</div>
                 <h3>Registration Successful!</h3>
-                <p>Student has been registered successfully. Here's their ID card:</p>
+                <p>Student ID card generated. Print double-sided on A4 paper for 65×95mm ID card.</p>
+                {result?.success && (
+                  <div className="success-message">
+                    <p>✅ QR code has been emailed to {formData.email}</p>
+                  </div>
+                )}
               </div>
               
-              <div className="id-card">
-                <div className="qr-code-container">
-                  <div className="qr-code">
-                    <QRCode value={generatedQR} size={200} />
-                  </div>
-                  <p className="qr-note">Scan this QR code for attendance and fee payments</p>
-                </div>
-                
-                <div className="student-info">
-                  <h4>Student ID Card</h4>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <strong>Student ID:</strong> 
-                      <span>{registeredStudent.studentId}</span>
-                    </div>
-                    <div className="info-item">
-                      <strong>Name:</strong> 
-                      <span>{formData.firstName} {formData.lastName}</span>
-                    </div>
-                    <div className="info-item">
-                      <strong>Gender:</strong> 
-                      <span>{formData.gender}</span>
-                    </div>
-                    <div className="info-item">
-                      <strong>Date of Birth:</strong> 
-                      <span>{new Date(formData.dob).toLocaleDateString()}</span>
-                    </div>
-                    <div className="info-item">
-                      <strong>Grade:</strong> 
-                      <span>{formData.grade}</span>
-                    </div>
-                    {formData.schoolClass && (
-                      <div className="info-item">
-                        <strong>Class:</strong> 
-                        <span>{formData.schoolClass.className}</span>
+              {/* ID Card Preview Container */}
+              <div className="id-card-container">
+                <div className="id-card-preview">
+                  {/* Front Side - Student Details */}
+                  <div className="id-card-side front-side">
+                    <div className="card-header">
+                      <div className="school-logo">
+                        <div className="logo-circle">SEI</div>
                       </div>
-                    )}
-                    <div className="info-item">
-                      <strong>Email:</strong> 
-                      <span>{formData.email}</span>
-                    </div>
-                    <div className="info-item">
-                      <strong>Phone:</strong> 
-                      <span>{formData.phone}</span>
-                    </div>
-                    {formData.guardianName && (
-                      <div className="info-item">
-                        <strong>Guardian:</strong> 
-                        <span>{formData.guardianName}</span>
+                      <div className="school-info">
+                        <h3>SAMMANA EDUCATIONAL INSTITUTE</h3>
+                        <p className="school-tagline">Knowledge • Excellence • Success</p>
                       </div>
-                    )}
+                    </div>
+                                       
+                    <div className="student-details">
+                      <div className="detail-row">
+                        <div className="detail-label">STUDENT ID</div>
+                        <div className="detail-value student-id">{registeredStudent?.studentId}</div>
+                      </div>
+                      
+                      <div className="detail-row">
+                        <div className="detail-label">FULL NAME</div>
+                        <div className="detail-value name">{formData.firstName} {formData.lastName}</div>
+                      </div>
+                      
+                      <div className="detail-row">
+                        <div className="detail-label">GRADE</div>
+                        <div className="detail-value grade">{formData.grade}</div>
+                      </div>
+                      
+                      <div className="detail-row">
+                        <div className="detail-label">CLASS</div>
+                        <div className="detail-value class">{formData.schoolClass?.className || 'Not Assigned'}</div>
+                      </div>
+                      
+                      {formData.grade === 'A/L' && stream && (
+                        <div className="detail-row">
+                          <div className="detail-label">STREAM</div>
+                          <div className="detail-value stream">{stream}</div>
+                        </div>
+                      )}
+                      
+                      <div className="detail-row">
+                        <div className="detail-label">DATE OF BIRTH</div>
+                        <div className="detail-value dob">
+                          {new Date(formData.dob).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </div>
+                      </div>
+                  
+                    </div>
+                    
+                    <div className="card-footer">
+                      <div className="signature-line">
+                        <div className="signature-label">AUTHORIZED SIGNATURE</div>
+                      </div>
+                      <div className="card-number">ID: {registeredStudent?.studentId}</div>
+                    </div>
+                    
+                    <div className="front-indicator">FRONT SIDE</div>
                   </div>
                   
-                  <div className="action-buttons">
-                    <button onClick={handlePrint} className="print-btn">
-                    🖨️ Print ID Card
-                    </button>
-                    <button onClick={resetForm} className="new-registration-btn">
-                      👨‍🎓 Register Another Student
+                  {/* Back Side - QR Code */}
+                  <div className="id-card-side back-side">
+                    <div className="qr-section-back">
+                      <div className="qr-container-large">
+                        <img 
+                          src={qrImage} 
+                          alt="Student QR Code" 
+                          className="qr-image-large"
+                        />
+                      </div>                                     
+                      <div className="back-side-footer">
+                        <div className="website">www.sammanaedu.com</div>
+                        <div className="contact">📞 011-234-5678</div>
+                      </div>
+                      
+                      <div className="back-indicator">BACK SIDE</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="print-instructions">
+                  <h4>📋 Printing Instructions:</h4>
+                  <ul>
+                    <li>✅ Print <strong>double-sided</strong> on A4 paper</li>
+                    <li>✅ Card size: <strong>65mm × 95mm</strong> (standard ID card)</li>
+                    <li>✅ Print front side first, then flip paper vertically</li>
+                    <li>✅ Print back side on reverse side</li>
+                    <li>✅ Use thick paper or cardstock (200-300gsm recommended)</li>
+                    <li>✅ Laminate after printing for durability</li>
+                  </ul>
+                </div>
+                
+                <div className="card-actions">
+                  <div className="print-buttons">
+                    <button onClick={() => {
+                      setPrintPreview(true);
+                      setTimeout(handlePrint, 100);
+                    }} className="print-btn both-btn">
+                      🖨️ PRINT ID CARD
                     </button>
                   </div>
+                  <button onClick={resetForm} className="new-registration-btn">
+                    ➕ REGISTER ANOTHER STUDENT
+                  </button>
                 </div>
               </div>
             </div>
           )}
 
-          {result && result.error && (
+          {result?.error && (
             <div className="result-box error">
               <h3>Error</h3>
-              <pre>{JSON.stringify(result, null, 2)}</pre>
+              <p>{result.message}</p>
             </div>
           )}
         </div>
       </main>
+
+          {/* Simple Print Preview Modal */}
+{printPreview && (
+  <div className="simple-print-preview">
+    <div className="preview-content">
+      <h3>Printing ID Card...</h3>
+      <p>Print window should open automatically. If it doesn't, please check your popup blocker.</p>
+      <div className="preview-buttons">
+        <button onClick={handlePrint} className="retry-print-btn">
+          🖨️ Open Print Window
+        </button>
+        <button onClick={() => setPrintPreview(false)} className="cancel-btn">
+          ✖️ Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
